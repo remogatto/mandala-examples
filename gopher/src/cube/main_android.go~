@@ -1,0 +1,21 @@
+// +build android
+
+package main
+
+import (
+	"github.com/remogatto/application"
+	"runtime"
+)
+
+func main() {
+	runtime.GOMAXPROCS(runtime.NumCPU())
+
+	application.Verbose = true
+	application.Debug = true
+
+	// Create client side loops and register them.
+	renderLoop := newRenderLoop(FRAMES_PER_SECOND)
+	eventsLoop := newEventsLoop(renderLoop)
+	application.Register("renderLoop", renderLoop)
+	application.Register("eventsLoop", eventsLoop)
+}
