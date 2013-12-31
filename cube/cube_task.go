@@ -26,12 +26,12 @@ var (
 	// Android path
 	AndroidPath = "android"
 
-	buildFun = map[string]func(*tasking.T){
+	buildFun = map[string]func(*tasking.T, bool){
 		"xorg":    buildXorg,
 		"android": buildAndroid,
 	}
 
-	runFun = map[string]func(*tasking.T){
+	runFun = map[string]func(*tasking.T, string){
 		"xorg":    runXorg,
 		"android": runAndroid,
 	}
@@ -47,11 +47,16 @@ var (
 //    Build the example for the given platforms.
 //
 // OPTIONS
+//    --all, -a
+//        force rebuilding of packages that are already up-to-date
 //    --verbose, -v
 //        run in verbose mode
 func TaskBuild(t *tasking.T) {
 	for _, platform := range t.Args {
-		buildFun[platform](t)
+		buildFun[platform](t, t.Flags.Bool("a"))
+	}
+	if t.Failed() {
+		t.Fatalf("%-20s %s\n", status(t.Failed()), "Build the example for the given platforms.")
 	}
 	t.Logf("%-20s %s\n", status(t.Failed()), "Build the example for the given platforms.")
 }
@@ -63,12 +68,19 @@ func TaskBuild(t *tasking.T) {
 //    Build and run the example on the given platforms.
 //
 // OPTIONS
+//    --flags=""
+//        pass the given flags to the executable
+//    --logcat
+//        show logcat output (android only)
 //    --verbose, -v
 //        run in verbose mode
 func TaskRun(t *tasking.T) {
+	TaskBuild(t)
 	for _, platform := range t.Args {
-		buildFun[platform](t)
-		runFun[platform](t)
+		runFun[platform](t, t.Flags.String("flags"))
+	}
+	if t.Failed() {
+		t.Fatalf("%-20s %s\n", status(t.Failed()), "Run the example on the given platforms.")
 	}
 	t.Logf("%-20s %s\n", status(t.Failed()), "Run the example on the given platforms.")
 }
@@ -84,6 +96,9 @@ func TaskRun(t *tasking.T) {
 //        run in verbose mode
 func TaskDeploy(t *tasking.T) {
 	deployAndroid(t)
+	if t.Failed() {
+		t.Fatalf("%-20s %s\n", status(t.Failed()), "Build and deploy the application on the device via ant.")
+	}
 	t.Logf("%-20s %s\n", status(t.Failed()), "Build and deploy the application on the device via ant.")
 }
 
@@ -114,14 +129,21 @@ func TaskClean(t *tasking.T) {
 		rm_rf(t, path)
 	}
 
-	t.Logf("%-20s %s\n", status(t.Failed()), "Clean all generated files and path")
+	if t.Failed() {
+		t.Fatalf("%-20s %s\n", status(t.Failed()), "Clean all generated files and paths.")
+	}
+	t.Logf("%-20s %s\n", status(t.Failed()), "Clean all generated files and paths.")
 }
 
-func buildXorg(t *tasking.T) {
+func buildXorg(t *tasking.T, buildAll bool) {
+	allFlagString := ""
+	if buildAll {
+		allFlagString = "-a"
+	}
 	err := t.Exec(
 		`sh -c "`,
 		"GOPATH=`pwd`:$GOPATH",
-		`go install`,
+		`go install`, allFlagString,
 		ProjectName, `"`,
 	)
 	if err != nil {
@@ -129,9 +151,15 @@ func buildXorg(t *tasking.T) {
 	}
 }
 
-func buildAndroid(t *tasking.T) {
+func buildAndroid(t *tasking.T, buildAll bool) {
+	allFlagString := ""
+
 	os.MkdirAll("android/libs/armeabi-v7a", 0777)
 	os.MkdirAll("android/obj/local/armeabi-v7a", 0777)
+
+	if buildAll {
+		allFlagString = "-a"
+	}
 
 	err := t.Exec(`sh -c "`,
 		`CC="$NDK_ROOT/bin/arm-linux-androideabi-gcc"`,
@@ -141,7 +169,7 @@ func buildAndroid(t *tasking.T) {
 		"GOARCH=arm",
 		"GOARM=7",
 		"CGO_ENABLED=1",
-		"$GOANDROID/go install -a",
+		"$GOANDROID/go install", allFlagString,
 		"$GOFLAGS",
 		`-ldflags=\"-android -shared -extld $NDK_ROOT/bin/arm-linux-androideabi-gcc -extldflags '-march=armv7-a -mfloat-abi=softfp -mfpu=vfpv3-d16'\"`,
 		"-tags android",
@@ -163,20 +191,25 @@ func buildAndroid(t *tasking.T) {
 			t.Error(err)
 		}
 	}
+
+	err = t.Exec("ant -f android/build.xml clean debug")
+	if err != nil {
+		t.Error(err)
+	}
+
 }
 
-func runXorg(t *tasking.T) {
-	buildXorg(t)
+func runXorg(t *tasking.T, flags string) {
 	err := t.Exec(
 		filepath.Join("bin", ProjectName),
+		flags,
 	)
 	if err != nil {
 		t.Error(err)
 	}
 }
 
-func runAndroid(t *tasking.T) {
-	buildAndroid(t)
+func runAndroid(t *tasking.T, flags string) {
 	deployAndroid(t)
 	err := t.Exec(
 		fmt.Sprintf(
@@ -186,18 +219,15 @@ func runAndroid(t *tasking.T) {
 	if err != nil {
 		t.Error(err)
 	}
+	if t.Flags.Bool("logcat") {
+		err = t.Exec("adb shell logcat")
+		if err != nil {
+			t.Error(err)
+		}
+	}
 }
 
 func deployAndroid(t *tasking.T) {
-	buildAndroid(t)
-	err := t.Exec("ant -f android/build.xml clean debug")
-	if err != nil {
-		t.Error(err)
-	}
-	uploadAndroid(t)
-}
-
-func uploadAndroid(t *tasking.T) {
 	err := t.Exec(fmt.Sprintf("adb install -r android/bin/%s-debug.apk", ProjectName))
 	if err != nil {
 		t.Error(err)

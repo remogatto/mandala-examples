@@ -3,7 +3,8 @@
 package main
 
 import (
-	"github.com/remogatto/application"
+	"fmt"
+	"git.tideland.biz/goas/loop"
 	"github.com/remogatto/gorgasm"
 	"runtime"
 )
@@ -11,27 +12,32 @@ import (
 func main() {
 	runtime.GOMAXPROCS(runtime.NumCPU())
 
-	application.Verbose = true
-	application.Debug = true
+	gorgasm.Verbose = true
+	gorgasm.Debug = true
 
-	// The main() function can't be blocking on Android so we have
-	// to launch the application control loop on a separate
-	// goroutine.
-	go func() {
-		for {
-			select {
-			case eglState := <-gorgasm.Init:
-				renderLoop := newRenderLoop(eglState, FRAMES_PER_SECOND)
-				eventsLoop := newEventsLoop(renderLoop)
-				application.Register("renderLoop", renderLoop)
-				application.Register("eventsLoop", eventsLoop)
-				application.Start("renderLoop")
-				application.Start("eventsLoop")
-			case <-application.ExitCh:
-				return
-			case err := <-application.ErrorCh:
-				application.Logf(err.(application.Error).Error())
+	// Create rendering loop control channels
+	renderLoopControl := newRenderLoopControl()
+	// Start the rendering loop
+	loop.GoRecoverable(
+		renderLoopFunc(renderLoopControl),
+		func(rs loop.Recoverings) (loop.Recoverings, error) {
+			for _, r := range rs {
+				gorgasm.Logf("%s", r.Reason)
+				gorgasm.Logf("%s", gorgasm.Stacktrace())
 			}
-		}
-	}()
+			return rs, fmt.Errorf("Unrecoverable loop\n")
+		},
+	)
+	// Start the event loop
+	loop.GoRecoverable(
+		eventLoopFunc(renderLoopControl),
+		func(rs loop.Recoverings) (loop.Recoverings, error) {
+			for _, r := range rs {
+				gorgasm.Logf("%s", r.Reason)
+				gorgasm.Logf("%s", gorgasm.Stacktrace())
+			}
+			return rs, fmt.Errorf("Unrecoverable loop\n")
+		},
+	)
+
 }

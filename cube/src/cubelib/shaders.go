@@ -8,23 +8,36 @@ import (
 type VertexShader string
 type FragmentShader string
 
-func compileShader(typeOfShader gl.Enum, source string) uint32 {
-	shader := gl.CreateShader(typeOfShader)
-	check()
-	gl.ShaderSource(shader, 1, &source, nil)
-	check()
-	gl.CompileShader(shader)
-	check()
+func checkShaderCompileStatus(shader uint32) {
 	var stat int32
 	gl.GetShaderiv(shader, gl.COMPILE_STATUS, &stat)
 	if stat == 0 {
-		var s = make([]byte, 1000)
-		var length gl.Sizei
-		_log := string(s)
-		gl.GetShaderInfoLog(shader, 1000, &length, &_log)
-		log.Fatalf("Error: compiling:\n%s\n", _log)
+		var length int32
+		gl.GetShaderiv(shader, gl.INFO_LOG_LENGTH, &length)
+		infoLog := gl.GetShaderInfoLog(shader, gl.Sizei(length), nil)
+		log.Fatalf("Compile error in shader %d: \"%s\"\n", shader, infoLog[:len(infoLog)-1])
 	}
-	return shader
+}
+
+func checkProgramLinkStatus(pid uint32) {
+	var stat int32
+	gl.GetProgramiv(pid, gl.LINK_STATUS, &stat)
+	if stat == 0 {
+		var length int32
+		gl.GetProgramiv(pid, gl.INFO_LOG_LENGTH, &length)
+		infoLog := gl.GetProgramInfoLog(pid, gl.Sizei(length), nil)
+		log.Fatalf("Link error in program %d: \"%s\"\n", pid, infoLog[:len(infoLog)-1])
+	}
+}
+
+func compileShader(typeOfShader gl.Enum, source string) uint32 {
+	if shader := gl.CreateShader(typeOfShader); shader != 0 {
+		gl.ShaderSource(shader, 1, &source, nil)
+		gl.CompileShader(shader)
+		checkShaderCompileStatus(shader)
+		return shader
+	}
+	return 0
 }
 
 func (s VertexShader) Compile() uint32 {
@@ -43,21 +56,11 @@ type Program struct {
 }
 
 func (p *Program) Link(fsh, vsh uint32) {
-	log.Printf("VSH %d FSH %d\n", fsh, vsh)
-
 	p.pid = gl.CreateProgram()
 	gl.AttachShader(p.pid, fsh)
 	gl.AttachShader(p.pid, vsh)
 	gl.LinkProgram(p.pid)
-	var stat int32
-	gl.GetProgramiv(p.pid, gl.LINK_STATUS, &stat)
-	if stat == 0 {
-		var s = make([]byte, 1000)
-		var length gl.Sizei
-		_log := string(s)
-		gl.GetProgramInfoLog(p.pid, 1000, &length, &_log)
-		log.Fatalf("Error: linking:\n%s\n", _log)
-	}
+	checkProgramLinkStatus(p.pid)
 }
 
 func (p *Program) Use() {

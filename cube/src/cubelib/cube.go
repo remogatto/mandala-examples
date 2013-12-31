@@ -1,16 +1,16 @@
 package cubelib
 
 import (
+	"fmt"
 	"github.com/mortdeus/mathgl"
-	"github.com/remogatto/egl"
 	gl "github.com/remogatto/opengles2"
 	"image"
-	"log"
-	"fmt"
+	"image/png"
+	"os"
 )
 
 const (
-	SizeOfFloat = 4
+	SizeOfFloat   = 4
 	TEX_COORD_MAX = 1
 )
 
@@ -73,31 +73,21 @@ func check() {
 	}
 }
 
-func Swap(display egl.Display, surface egl.Surface) {
-	egl.SwapBuffers(display, surface)
-}
-
-func Cleanup(display egl.Display, surface egl.Surface, context egl.Context) {
-	egl.DestroySurface(display, surface)
-	egl.DestroyContext(display, context)
-	egl.Terminate(display)
-}
-
 type Cube struct {
-	Vertices              *BufferFloat
-	Program               Program
-	indices               *BufferByte
-	textureBuffer uint32
-	attrPos, attrColor, attrTexIn    uint32
-	uniformTexture uint32
-	uniformModel          uint32
-	uniformProjectionView uint32
-	model, projectionView mathgl.Mat4
+	Vertices                      *BufferFloat
+	Program                       Program
+	indices                       *BufferByte
+	textureBuffer                 uint32
+	attrPos, attrColor, attrTexIn uint32
+	uniformTexture                uint32
+	uniformModel                  uint32
+	uniformProjectionView         uint32
+	model, projectionView         mathgl.Mat4f
 }
 
 func NewCube() *Cube {
 	cube := new(Cube)
-	cube.model.Identity()
+	cube.model = mathgl.Ident4f()
 
 	cube.Vertices = NewBufferFloat([]float32{
 		// Front
@@ -111,7 +101,7 @@ func NewCube() *Cube {
 		1, -1, -1, 1, TEX_COORD_MAX, TEX_COORD_MAX,
 		-1, 1, -1, 1, 0, 0,
 		// Left
-		-1, -1, 1, 1, TEX_COORD_MAX, 0, 
+		-1, -1, 1, 1, TEX_COORD_MAX, 0,
 		-1, 1, 1, 1, TEX_COORD_MAX, TEX_COORD_MAX,
 		-1, 1, -1, 1, 0, TEX_COORD_MAX,
 		-1, -1, -1, 1, 0, 0,
@@ -128,7 +118,7 @@ func NewCube() *Cube {
 		// Bottom
 		1, -1, -1, 1, TEX_COORD_MAX, 0,
 		1, -1, 1, 1, TEX_COORD_MAX, TEX_COORD_MAX,
-		-1, -1, 1, 1, 0, TEX_COORD_MAX, 
+		-1, -1, 1, 1, 0, TEX_COORD_MAX,
 		-1, -1, -1, 1, 0, 0,
 	})
 	cube.indices = NewBufferByte([]byte{
@@ -153,6 +143,7 @@ func NewCube() *Cube {
 	})
 
 	fragmentShader := (FragmentShader)(`
+        precision highp float;
 	varying vec2 texOut;
         uniform sampler2D texture;
 
@@ -190,18 +181,26 @@ func NewCube() *Cube {
 	gl.EnableVertexAttribArray(cube.attrColor)
 	gl.EnableVertexAttribArray(cube.attrTexIn)
 
-	log.Printf("Program %d\n", cube.Program.pid)
-	log.Printf("Color attr %d Vertex attr %d\n", cube.attrColor, cube.attrPos)
-
 	return cube
 }
 
-func (c *Cube) RotateY(angle float32) {
-	c.model.RotationY(angle)
+func (c *Cube) Rotate(angle float32, axis mathgl.Vec3f) {
+	c.model = mathgl.HomogRotate3D(angle, axis)
 }
 
-func (c *Cube) RotateZ(angle float32) {
-	c.model.RotationZ(angle)
+func (c *Cube) AttachTextureFromFile(filename string) error {
+	file, err := os.Open(filename)
+	defer file.Close()
+	if err != nil {
+		return err
+	}
+	// Decode the image.
+	img, err := png.Decode(file)
+	if err != nil {
+		return err
+	}
+	c.AttachTexture(img)
+	return nil
 }
 
 func (c *Cube) AttachTexture(img image.Image) {
@@ -239,11 +238,11 @@ func (c *Cube) Draw() {
 	c.Vertices.bind()
 	gl.VertexAttribPointer(c.attrPos, 4, gl.FLOAT, false, SizeOfFloat*6, 0)
 	gl.VertexAttribPointer(c.attrTexIn, 2, gl.FLOAT, false, 6*SizeOfFloat, 4*SizeOfFloat)
-//	gl.VertexAttribPointer(c.attrColor, 4, gl.FLOAT, false, SizeOfFloat*8, SizeOfFloat*4)
+	//	gl.VertexAttribPointer(c.attrColor, 4, gl.FLOAT, false, SizeOfFloat*8, SizeOfFloat*4)
 
 	gl.UniformMatrix4fv(int32(c.uniformModel), 1, false, (*float32)(&c.model[0]))
 	gl.UniformMatrix4fv(int32(c.uniformProjectionView), 1, false, (*float32)(&c.projectionView[0]))
-	
+
 	gl.ActiveTexture(gl.TEXTURE0)
 	gl.BindTexture(gl.TEXTURE_2D, c.textureBuffer)
 	gl.Uniform1i(int32(c.uniformTexture), 0)
