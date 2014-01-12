@@ -3,7 +3,7 @@
 This a non trivial example that demonstrates the use of
 [Gorgasm](https://github.com/remogatto/gorgasm) to build Android
 native applications. It shows a rotating cube shaded with a
-texture. Swipe on the screen to rotate the model.
+texture.
 
 The example is shipped with a simple helper package named
 <tt>cubelib</tt>. Package <tt>cubelib</tt> provides a naive
