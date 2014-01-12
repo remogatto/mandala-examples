@@ -50,7 +50,7 @@ func main() {
 	// Enable OpenGL ES 2.0.
 	glfw.WindowHint(glfw.ClientApi, glfw.OpenglEsApi)
 	glfw.WindowHint(glfw.ContextVersionMajor, 2)
-	window, err := glfw.CreateWindow(width, height, "Spinning cube", nil, nil)
+	window, err := glfw.CreateWindow(width, height, "{{.AppName}}", nil, nil)
 	if err != nil {
 		panic(err)
 	}

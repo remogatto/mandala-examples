@@ -1,8 +1,9 @@
 package cubelib
 
 import (
-	gl "github.com/remogatto/opengles2"
 	"log"
+
+	gl "github.com/remogatto/opengles2"
 )
 
 type VertexShader string
@@ -15,7 +16,9 @@ func checkShaderCompileStatus(shader uint32) {
 		var length int32
 		gl.GetShaderiv(shader, gl.INFO_LOG_LENGTH, &length)
 		infoLog := gl.GetShaderInfoLog(shader, gl.Sizei(length), nil)
-		log.Fatalf("Compile error in shader %d: \"%s\"\n", shader, infoLog[:len(infoLog)-1])
+		if len(infoLog) > 0 {
+			log.Fatalf("Compile error in shader %d: \"%s\"\n", shader, infoLog[:len(infoLog)])
+		}
 	}
 }
 
@@ -26,7 +29,9 @@ func checkProgramLinkStatus(pid uint32) {
 		var length int32
 		gl.GetProgramiv(pid, gl.INFO_LOG_LENGTH, &length)
 		infoLog := gl.GetProgramInfoLog(pid, gl.Sizei(length), nil)
-		log.Fatalf("Link error in program %d: \"%s\"\n", pid, infoLog[:len(infoLog)-1])
+		if len(infoLog) > 0 {
+			log.Fatalf("Link error in program %d: \"%s\"\n", pid, infoLog[:len(infoLog)])
+		}
 	}
 }
 

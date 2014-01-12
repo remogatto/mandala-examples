@@ -2,11 +2,12 @@ package cubelib
 
 import (
 	"fmt"
-	"github.com/mortdeus/mathgl"
-	gl "github.com/remogatto/opengles2"
 	"image"
 	"image/png"
 	"os"
+
+	"github.com/remogatto/mathgl"
+	gl "github.com/remogatto/opengles2"
 )
 
 const (
@@ -143,7 +144,7 @@ func NewCube() *Cube {
 	})
 
 	fragmentShader := (FragmentShader)(`
-        precision highp float;
+        precision mediump float;
 	varying vec2 texOut;
         uniform sampler2D texture;
 

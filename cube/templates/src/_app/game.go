@@ -1,19 +1,16 @@
 package main
 
 import (
-	"image"
-	"image/png"
 	"runtime"
 	"time"
 
 	"git.tideland.biz/goas/loop"
 	"github.com/remogatto/gorgasm"
-	"github.com/remogatto/gorgasm-examples/cube/src/cubelib"
 	gl "github.com/remogatto/opengles2"
 )
 
 const (
-	FRAMES_PER_SECOND = 30
+	FRAMES_PER_SECOND = 24
 )
 
 type viewportSize struct {
@@ -27,35 +24,9 @@ type renderLoopControl struct {
 	window         chan gorgasm.Window
 }
 
-type renderState struct {
-	window            gorgasm.Window
-	world             *cubelib.World
-	cube              *cubelib.Cube
-	angle, savedAngle float32
-}
-
-func (renderState *renderState) init(window gorgasm.Window) {
-	window.MakeContextCurrent()
-
-	renderState.window = window
-	width, height := window.GetSize()
-
-	// Create the 3D world
-	renderState.world = cubelib.NewWorld(width, height)
-	renderState.world.SetCamera(0.0, 0.0, 5.0)
-
-	renderState.cube = cubelib.NewCube()
-
-	img, err := loadImage("res/drawable/marmo.png")
-	if err != nil {
-		panic(err)
-	}
-
-	renderState.cube.AttachTexture(img)
-
-	renderState.world.Attach(renderState.cube)
-	renderState.angle = 0.0
-}
+var (
+	window gorgasm.Window
+)
 
 func newRenderLoopControl() *renderLoopControl {
 	return &renderLoopControl{
@@ -66,15 +37,16 @@ func newRenderLoopControl() *renderLoopControl {
 	}
 }
 
+func draw() {
+	gl.ClearColor(1.0, 0.0, 0.0, 1.0)
+	gl.Clear(gl.COLOR_BUFFER_BIT)
+}
+
 // Run runs renderLoop. The loop renders a frame and swaps the buffer
 // at each tick received.
 func renderLoopFunc(control *renderLoopControl) loop.LoopFunc {
 	return func(loop loop.Loop) error {
-
-		// renderState keeps the rendering state variables
-		// such as the EGL status
-		renderState := new(renderState)
-
+		var window gorgasm.Window
 		// Lock/unlock the loop to the current OS thread. This is
 		// necessary because OpenGL functions should be called from
 		// the same thread.
@@ -89,37 +61,26 @@ func renderLoopFunc(control *renderLoopControl) loop.LoopFunc {
 
 		for {
 			select {
-			case window := <-control.window:
+			case window = <-control.window:
 				ticker.Stop()
-				renderState.init(window)
+
+				window.MakeContextCurrent()
+
+				width, height := window.GetSize()
+				gl.Viewport(0, 0, gl.Sizei(width), gl.Sizei(height))
+
 				gorgasm.Logf("Restarting rendering loop...")
 				ticker = time.NewTicker(time.Duration(1e9 / int(FRAMES_PER_SECOND)))
 
 			// At each tick render a frame and swap buffers.
 			case <-ticker.C:
-				renderState.angle += 0.05
-				renderState.cube.Rotate(renderState.angle, [3]float32{0, 1, 0})
-				renderState.world.Draw()
-				renderState.window.SwapBuffers()
-
-			case viewport := <-control.resizeViewport:
-				if renderState.world != nil {
-					if viewport.width != renderState.world.Width || viewport.height != renderState.world.Height {
-						gorgasm.Logf("Resize native window W:%v H:%v\n", viewport.width, viewport.height)
-						ticker.Stop()
-						renderState.world.Resize(viewport.width, viewport.height)
-						ticker = time.NewTicker(time.Duration(1e9 / int(FRAMES_PER_SECOND)))
-					}
-				}
+				draw()
+				window.SwapBuffers()
 
 			case <-control.pause:
-				renderState.savedAngle = renderState.angle
-				gorgasm.Logf("Save an angle value of %f", renderState.savedAngle)
 				ticker.Stop()
 
 			case <-control.resume:
-				renderState.angle = renderState.savedAngle
-				gorgasm.Logf("Restore an angle value of %f", renderState.angle)
 
 			case <-loop.ShallStop():
 				ticker.Stop()
@@ -130,7 +91,7 @@ func renderLoopFunc(control *renderLoopControl) loop.LoopFunc {
 }
 
 // eventLoopFunc listen to events originating from the
-// framwork.
+// framework.
 func eventLoopFunc(renderLoopControl *renderLoopControl) loop.LoopFunc {
 	return func(loop loop.Loop) error {
 
@@ -196,8 +157,6 @@ func eventLoopFunc(renderLoopControl *renderLoopControl) loop.LoopFunc {
 					return nil
 
 				case gorgasm.NativeWindowRedrawNeededEvent:
-					width, height := event.Window.GetSize()
-					renderLoopControl.resizeViewport <- viewportSize{width, height}
 
 				case gorgasm.PauseEvent:
 					gorgasm.Logf("Application was paused. Stopping rendering ticker.")
@@ -211,34 +170,4 @@ func eventLoopFunc(renderLoopControl *renderLoopControl) loop.LoopFunc {
 			}
 		}
 	}
-}
-
-func check() {
-	error := gl.GetError()
-	if error != 0 {
-		gorgasm.Logf("An error occurred! Code: 0x%x", error)
-	}
-}
-
-func loadImage(filename string) (image.Image, error) {
-	// Request an asset to the asset manager. When the app runs on
-	// an Android device, the apk will be unpacked and the file
-	// will be read from it and copied to a byte buffer.
-	request := gorgasm.LoadAssetRequest{
-		filename,
-		make(chan gorgasm.LoadAssetResponse),
-	}
-	gorgasm.AssetManager() <- request
-	response := <-request.Response
-
-	if response.Error != nil {
-		return nil, response.Error
-	}
-
-	// Decode the image.
-	img, err := png.Decode(response.Buffer)
-	if err != nil {
-		return nil, err
-	}
-	return img, nil
 }
