@@ -38,10 +38,10 @@ func (p *Application) GetFullDomain() string {
 }
 
 // NAME
-//   init - Initialize a new Gorgasm application
+//   init - Initialize a new Mandala application
 //
 // DESCRIPTION
-//    Initialize a new Gorgasm application based on application.json
+//    Initialize a new Mandala application based on application.json
 //
 func TaskInit(t *tasking.T) {
 	var err error
@@ -90,9 +90,9 @@ func TaskInit(t *tasking.T) {
 	}
 
 	if t.Failed() {
-		t.Fatalf("%-20s %s\n", status(t.Failed()), "Initialize a new Gorgasm application")
+		t.Fatalf("%-20s %s\n", status(t.Failed()), "Initialize a new Mandala application")
 	}
-	t.Logf("%-20s %s\n", status(t.Failed()), "Initialize a new Gorgasm application")
+	t.Logf("%-20s %s\n", status(t.Failed()), "Initialize a new Mandala application")
 }
 
 func readJSON(filename string) (*Application, error) {

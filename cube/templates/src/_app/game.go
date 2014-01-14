@@ -5,7 +5,7 @@ import (
 	"time"
 
 	"git.tideland.biz/goas/loop"
-	"github.com/remogatto/gorgasm"
+	"github.com/remogatto/mandala"
 	gl "github.com/remogatto/opengles2"
 )
 
@@ -21,11 +21,11 @@ type renderLoopControl struct {
 	resizeViewport chan viewportSize
 	pause          chan bool
 	resume         chan bool
-	window         chan gorgasm.Window
+	window         chan mandala.Window
 }
 
 var (
-	window gorgasm.Window
+	window mandala.Window
 )
 
 func newRenderLoopControl() *renderLoopControl {
@@ -33,7 +33,7 @@ func newRenderLoopControl() *renderLoopControl {
 		make(chan viewportSize),
 		make(chan bool),
 		make(chan bool),
-		make(chan gorgasm.Window, 1),
+		make(chan mandala.Window, 1),
 	}
 }
 
@@ -46,7 +46,7 @@ func draw() {
 // at each tick received.
 func renderLoopFunc(control *renderLoopControl) loop.LoopFunc {
 	return func(loop loop.Loop) error {
-		var window gorgasm.Window
+		var window mandala.Window
 		// Lock/unlock the loop to the current OS thread. This is
 		// necessary because OpenGL functions should be called from
 		// the same thread.
@@ -69,7 +69,7 @@ func renderLoopFunc(control *renderLoopControl) loop.LoopFunc {
 				width, height := window.GetSize()
 				gl.Viewport(0, 0, gl.Sizei(width), gl.Sizei(height))
 
-				gorgasm.Logf("Restarting rendering loop...")
+				mandala.Logf("Restarting rendering loop...")
 				ticker = time.NewTicker(time.Duration(1e9 / int(FRAMES_PER_SECOND)))
 
 			// At each tick render a frame and swap buffers.
@@ -101,8 +101,8 @@ func eventLoopFunc(renderLoopControl *renderLoopControl) loop.LoopFunc {
 			// Receive an EGL state from the
 			// framework and notify the render
 			// loop about that.
-			// case eglState := <-gorgasm.Init:
-			// 	gorgasm.Logf("EGL surface initialized W:%d H:%d", eglState.SurfaceWidth, eglState.SurfaceHeight)
+			// case eglState := <-mandala.Init:
+			// 	mandala.Logf("EGL surface initialized W:%d H:%d", eglState.SurfaceWidth, eglState.SurfaceHeight)
 			// 	renderLoopControl.eglState <- eglState
 
 			// Receive events from the framework.
@@ -128,7 +128,7 @@ func eventLoopFunc(renderLoopControl *renderLoopControl) loop.LoopFunc {
 			// * onInputQueueDestroy
 			// * onDestroy
 
-			case untypedEvent := <-gorgasm.Events():
+			case untypedEvent := <-mandala.Events():
 				switch event := untypedEvent.(type) {
 
 				// Receive a native window
@@ -136,34 +136,34 @@ func eventLoopFunc(renderLoopControl *renderLoopControl) loop.LoopFunc {
 				// it to the render loop in
 				// order to begin the
 				// rendering process.
-				case gorgasm.NativeWindowCreatedEvent:
+				case mandala.NativeWindowCreatedEvent:
 					renderLoopControl.window <- event.Window
 
 				// Finger down/up on the screen.
-				case gorgasm.ActionUpDownEvent:
+				case mandala.ActionUpDownEvent:
 					if event.Down {
-						gorgasm.Logf("Finger is DOWN at %f %f", event.X, event.Y)
+						mandala.Logf("Finger is DOWN at %f %f", event.X, event.Y)
 					} else {
-						gorgasm.Logf("Finger is now UP")
+						mandala.Logf("Finger is now UP")
 					}
 
 					// Finger is moving on the screen.
-				case gorgasm.ActionMoveEvent:
-					gorgasm.Logf("Finger is moving at coord %f %f", event.X, event.Y)
+				case mandala.ActionMoveEvent:
+					mandala.Logf("Finger is moving at coord %f %f", event.X, event.Y)
 
-				case gorgasm.DestroyEvent:
-					gorgasm.Logf("Stop rendering...\n")
-					gorgasm.Logf("Quitting from application...\n")
+				case mandala.DestroyEvent:
+					mandala.Logf("Stop rendering...\n")
+					mandala.Logf("Quitting from application...\n")
 					return nil
 
-				case gorgasm.NativeWindowRedrawNeededEvent:
+				case mandala.NativeWindowRedrawNeededEvent:
 
-				case gorgasm.PauseEvent:
-					gorgasm.Logf("Application was paused. Stopping rendering ticker.")
+				case mandala.PauseEvent:
+					mandala.Logf("Application was paused. Stopping rendering ticker.")
 					renderLoopControl.pause <- true
 
-				case gorgasm.ResumeEvent:
-					gorgasm.Logf("Application was resumed. Reactivating rendering ticker.")
+				case mandala.ResumeEvent:
+					mandala.Logf("Application was resumed. Reactivating rendering ticker.")
 					renderLoopControl.resume <- true
 
 				}

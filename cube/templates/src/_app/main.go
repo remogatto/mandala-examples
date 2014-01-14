@@ -11,7 +11,7 @@ import (
 
 	"git.tideland.biz/goas/loop"
 	glfw "github.com/go-gl/glfw3"
-	"github.com/remogatto/gorgasm"
+	"github.com/remogatto/mandala"
 )
 
 func main() {
@@ -25,11 +25,11 @@ func main() {
 	flag.Parse()
 
 	if *verbose {
-		gorgasm.Verbose = true
+		mandala.Verbose = true
 	}
 
 	if *debug {
-		gorgasm.Debug = true
+		mandala.Debug = true
 	}
 
 	dims := strings.Split(strings.ToLower(*size), "x")
@@ -55,7 +55,7 @@ func main() {
 		panic(err)
 	}
 
-	gorgasm.Init(window)
+	mandala.Init(window)
 
 	// Create a rendering loop control struct containing a set of
 	// channels that control rendering.
@@ -66,8 +66,8 @@ func main() {
 		renderLoopFunc(renderLoopControl),
 		func(rs loop.Recoverings) (loop.Recoverings, error) {
 			for _, r := range rs {
-				gorgasm.Logf("%s", r.Reason)
-				gorgasm.Logf("%s", gorgasm.Stacktrace())
+				mandala.Logf("%s", r.Reason)
+				mandala.Logf("%s", mandala.Stacktrace())
 			}
 			return rs, fmt.Errorf("Unrecoverable loop\n")
 		},
@@ -77,8 +77,8 @@ func main() {
 		eventLoopFunc(renderLoopControl),
 		func(rs loop.Recoverings) (loop.Recoverings, error) {
 			for _, r := range rs {
-				gorgasm.Logf("%s", r.Reason)
-				gorgasm.Logf("%s", gorgasm.Stacktrace())
+				mandala.Logf("%s", r.Reason)
+				mandala.Logf("%s", mandala.Stacktrace())
 			}
 			return rs, fmt.Errorf("Unrecoverable loop\n")
 		},

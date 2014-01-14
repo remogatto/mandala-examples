@@ -15,7 +15,7 @@ var (
 	LibName = "cube"
 
 	// The domain without the last part
-	Domain = "net.gorgasm"
+	Domain = "net.mandala"
 
 	// The path for the ARM binary. The binary is then copied on
 	// each of SharedLibraryPaths

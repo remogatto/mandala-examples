@@ -7,8 +7,8 @@ import (
 	"time"
 
 	"git.tideland.biz/goas/loop"
-	"github.com/remogatto/gorgasm"
-	"github.com/remogatto/gorgasm-examples/cube/src/cubelib"
+	"github.com/remogatto/mandala"
+	"github.com/remogatto/mandala-examples/cube/src/cubelib"
 	gl "github.com/remogatto/opengles2"
 )
 
@@ -24,17 +24,17 @@ type renderLoopControl struct {
 	resizeViewport chan viewportSize
 	pause          chan bool
 	resume         chan bool
-	window         chan gorgasm.Window
+	window         chan mandala.Window
 }
 
 type renderState struct {
-	window            gorgasm.Window
+	window            mandala.Window
 	world             *cubelib.World
 	cube              *cubelib.Cube
 	angle, savedAngle float32
 }
 
-func (renderState *renderState) init(window gorgasm.Window) {
+func (renderState *renderState) init(window mandala.Window) {
 	window.MakeContextCurrent()
 
 	renderState.window = window
@@ -62,7 +62,7 @@ func newRenderLoopControl() *renderLoopControl {
 		make(chan viewportSize),
 		make(chan bool),
 		make(chan bool),
-		make(chan gorgasm.Window, 1),
+		make(chan mandala.Window, 1),
 	}
 }
 
@@ -92,7 +92,7 @@ func renderLoopFunc(control *renderLoopControl) loop.LoopFunc {
 			case window := <-control.window:
 				ticker.Stop()
 				renderState.init(window)
-				gorgasm.Logf("Restarting rendering loop...")
+				mandala.Logf("Restarting rendering loop...")
 				ticker = time.NewTicker(time.Duration(1e9 / int(FRAMES_PER_SECOND)))
 
 			// At each tick render a frame and swap buffers.
@@ -105,7 +105,7 @@ func renderLoopFunc(control *renderLoopControl) loop.LoopFunc {
 			case viewport := <-control.resizeViewport:
 				if renderState.world != nil {
 					if viewport.width != renderState.world.Width || viewport.height != renderState.world.Height {
-						gorgasm.Logf("Resize native window W:%v H:%v\n", viewport.width, viewport.height)
+						mandala.Logf("Resize native window W:%v H:%v\n", viewport.width, viewport.height)
 						ticker.Stop()
 						renderState.world.Resize(viewport.width, viewport.height)
 						ticker = time.NewTicker(time.Duration(1e9 / int(FRAMES_PER_SECOND)))
@@ -114,12 +114,12 @@ func renderLoopFunc(control *renderLoopControl) loop.LoopFunc {
 
 			case <-control.pause:
 				renderState.savedAngle = renderState.angle
-				gorgasm.Logf("Save an angle value of %f", renderState.savedAngle)
+				mandala.Logf("Save an angle value of %f", renderState.savedAngle)
 				ticker.Stop()
 
 			case <-control.resume:
 				renderState.angle = renderState.savedAngle
-				gorgasm.Logf("Restore an angle value of %f", renderState.angle)
+				mandala.Logf("Restore an angle value of %f", renderState.angle)
 
 			case <-loop.ShallStop():
 				ticker.Stop()
@@ -140,8 +140,8 @@ func eventLoopFunc(renderLoopControl *renderLoopControl) loop.LoopFunc {
 			// Receive an EGL state from the
 			// framework and notify the render
 			// loop about that.
-			// case eglState := <-gorgasm.Init:
-			// 	gorgasm.Logf("EGL surface initialized W:%d H:%d", eglState.SurfaceWidth, eglState.SurfaceHeight)
+			// case eglState := <-mandala.Init:
+			// 	mandala.Logf("EGL surface initialized W:%d H:%d", eglState.SurfaceWidth, eglState.SurfaceHeight)
 			// 	renderLoopControl.eglState <- eglState
 
 			// Receive events from the framework.
@@ -167,7 +167,7 @@ func eventLoopFunc(renderLoopControl *renderLoopControl) loop.LoopFunc {
 			// * onInputQueueDestroy
 			// * onDestroy
 
-			case untypedEvent := <-gorgasm.Events():
+			case untypedEvent := <-mandala.Events():
 				switch event := untypedEvent.(type) {
 
 				// Receive a native window
@@ -175,36 +175,36 @@ func eventLoopFunc(renderLoopControl *renderLoopControl) loop.LoopFunc {
 				// it to the render loop in
 				// order to begin the
 				// rendering process.
-				case gorgasm.NativeWindowCreatedEvent:
+				case mandala.NativeWindowCreatedEvent:
 					renderLoopControl.window <- event.Window
 
 				// Finger down/up on the screen.
-				case gorgasm.ActionUpDownEvent:
+				case mandala.ActionUpDownEvent:
 					if event.Down {
-						gorgasm.Logf("Finger is DOWN at %f %f", event.X, event.Y)
+						mandala.Logf("Finger is DOWN at %f %f", event.X, event.Y)
 					} else {
-						gorgasm.Logf("Finger is now UP")
+						mandala.Logf("Finger is now UP")
 					}
 
 					// Finger is moving on the screen.
-				case gorgasm.ActionMoveEvent:
-					gorgasm.Logf("Finger is moving at coord %f %f", event.X, event.Y)
+				case mandala.ActionMoveEvent:
+					mandala.Logf("Finger is moving at coord %f %f", event.X, event.Y)
 
-				case gorgasm.DestroyEvent:
-					gorgasm.Logf("Stop rendering...\n")
-					gorgasm.Logf("Quitting from application...\n")
+				case mandala.DestroyEvent:
+					mandala.Logf("Stop rendering...\n")
+					mandala.Logf("Quitting from application...\n")
 					return nil
 
-				case gorgasm.NativeWindowRedrawNeededEvent:
+				case mandala.NativeWindowRedrawNeededEvent:
 					width, height := event.Window.GetSize()
 					renderLoopControl.resizeViewport <- viewportSize{width, height}
 
-				case gorgasm.PauseEvent:
-					gorgasm.Logf("Application was paused. Stopping rendering ticker.")
+				case mandala.PauseEvent:
+					mandala.Logf("Application was paused. Stopping rendering ticker.")
 					renderLoopControl.pause <- true
 
-				case gorgasm.ResumeEvent:
-					gorgasm.Logf("Application was resumed. Reactivating rendering ticker.")
+				case mandala.ResumeEvent:
+					mandala.Logf("Application was resumed. Reactivating rendering ticker.")
 					renderLoopControl.resume <- true
 
 				}
@@ -216,7 +216,7 @@ func eventLoopFunc(renderLoopControl *renderLoopControl) loop.LoopFunc {
 func check() {
 	error := gl.GetError()
 	if error != 0 {
-		gorgasm.Logf("An error occurred! Code: 0x%x", error)
+		mandala.Logf("An error occurred! Code: 0x%x", error)
 	}
 }
 
@@ -224,11 +224,11 @@ func loadImage(filename string) (image.Image, error) {
 	// Request an asset to the asset manager. When the app runs on
 	// an Android device, the apk will be unpacked and the file
 	// will be read from it and copied to a byte buffer.
-	request := gorgasm.LoadAssetRequest{
+	request := mandala.LoadAssetRequest{
 		filename,
-		make(chan gorgasm.LoadAssetResponse),
+		make(chan mandala.LoadAssetResponse),
 	}
-	gorgasm.AssetManager() <- request
+	mandala.AssetManager() <- request
 	response := <-request.Response
 
 	if response.Error != nil {

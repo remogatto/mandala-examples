@@ -1,6 +1,6 @@
-# Gorgasm examples
+# Mandala examples
 
 This repository collects examples using the
-[Gorgasm](https://github.com/remogatto/gorgasm) framework. For further
+[Mandala](https://github.com/remogatto/mandala) framework. For further
 information explore the subfolders. Contributions are welcome!
 

@@ -5,15 +5,15 @@ package main
 import (
 	"fmt"
 	"git.tideland.biz/goas/loop"
-	"github.com/remogatto/gorgasm"
+	"github.com/remogatto/mandala"
 	"runtime"
 )
 
 func main() {
 	runtime.GOMAXPROCS(runtime.NumCPU())
 
-	gorgasm.Verbose = true
-	gorgasm.Debug = true
+	mandala.Verbose = true
+	mandala.Debug = true
 
 	// Create rendering loop control channels
 	renderLoopControl := newRenderLoopControl()
@@ -22,8 +22,8 @@ func main() {
 		renderLoopFunc(renderLoopControl),
 		func(rs loop.Recoverings) (loop.Recoverings, error) {
 			for _, r := range rs {
-				gorgasm.Logf("%s", r.Reason)
-				gorgasm.Logf("%s", gorgasm.Stacktrace())
+				mandala.Logf("%s", r.Reason)
+				mandala.Logf("%s", mandala.Stacktrace())
 			}
 			return rs, fmt.Errorf("Unrecoverable loop\n")
 		},
@@ -33,8 +33,8 @@ func main() {
 		eventLoopFunc(renderLoopControl),
 		func(rs loop.Recoverings) (loop.Recoverings, error) {
 			for _, r := range rs {
-				gorgasm.Logf("%s", r.Reason)
-				gorgasm.Logf("%s", gorgasm.Stacktrace())
+				mandala.Logf("%s", r.Reason)
+				mandala.Logf("%s", mandala.Stacktrace())
 			}
 			return rs, fmt.Errorf("Unrecoverable loop\n")
 		},

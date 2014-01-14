@@ -1,7 +1,7 @@
 # Spinning cube
 
 This a non trivial example that demonstrates the use of
-[Gorgasm](https://github.com/remogatto/gorgasm) to build Android
+[Mandala](https://github.com/remogatto/mandala) to build Android
 native applications. It shows a rotating cube shaded with a
 texture.
 
