@@ -30,12 +30,12 @@ var (
 	// Android path
 	AndroidPath = "android"
 
-	buildFun = map[string]func(*tasking.T, bool){
+	buildFun = map[string]func(*tasking.T){
 		"xorg":    buildXorg,
 		"android": buildAndroid,
 	}
 
-	runFun = map[string]func(*tasking.T, string){
+	runFun = map[string]func(*tasking.T){
 		"xorg":    runXorg,
 		"android": runAndroid,
 	}
@@ -48,13 +48,13 @@ var (
 //    Build the application for the given platforms.
 //
 // OPTIONS
-//    --all, -a
-//        force rebuilding of packages that are already up-to-date
+//    --flags=<FLAGS>
+//        pass FLAGS to the compiler
 //    --verbose, -v
 //        run in verbose mode
 func TaskBuild(t *tasking.T) {
 	for _, platform := range t.Args {
-		buildFun[platform](t, t.Flags.Bool("a"))
+		buildFun[platform](t)
 	}
 	if t.Failed() {
 		t.Fatalf("%-20s %s\n", status(t.Failed()), "Build the application for the given platforms.")
@@ -69,16 +69,16 @@ func TaskBuild(t *tasking.T) {
 //    Build and run the application on the given platforms.
 //
 // OPTIONS
-//    --flags=
-//        pass the given flags to the executable
-//    --logcat
+//    --flags=<FLAGS>
+//        pass the flags to the executable
+//    --logcat=Mandala:* stdout:* stderr:* *:S
 //        show logcat output (android only)
 //    --verbose, -v
 //        run in verbose mode
 func TaskRun(t *tasking.T) {
 	TaskBuild(t)
 	for _, platform := range t.Args {
-		runFun[platform](t, t.Flags.String("flags"))
+		runFun[platform](t)
 	}
 	if t.Failed() {
 		t.Fatalf("%-20s %s\n", status(t.Failed()), "Run the application on the given platforms.")
@@ -136,15 +136,11 @@ func TaskClean(t *tasking.T) {
 	t.Logf("%-20s %s\n", status(t.Failed()), "Clean all generated files and paths.")
 }
 
-func buildXorg(t *tasking.T, buildAll bool) {
-	allFlagString := ""
-	if buildAll {
-		allFlagString = "-a"
-	}
+func buildXorg(t *tasking.T) {
 	err := t.Exec(
 		`sh -c "`,
 		"GOPATH=`pwd`:$GOPATH",
-		`go install`, allFlagString,
+		`go install`, t.Flags.String("flags"),
 		LibName, `"`,
 	)
 	if err != nil {
@@ -152,15 +148,9 @@ func buildXorg(t *tasking.T, buildAll bool) {
 	}
 }
 
-func buildAndroid(t *tasking.T, buildAll bool) {
-	allFlagString := ""
-
+func buildAndroid(t *tasking.T) {
 	os.MkdirAll("android/libs/armeabi-v7a", 0777)
 	os.MkdirAll("android/obj/local/armeabi-v7a", 0777)
-
-	if buildAll {
-		allFlagString = "-a"
-	}
 
 	err := t.Exec(`sh -c "`,
 		`CC="$NDK_ROOT/bin/arm-linux-androideabi-gcc"`,
@@ -170,7 +160,7 @@ func buildAndroid(t *tasking.T, buildAll bool) {
 		"GOARCH=arm",
 		"GOARM=7",
 		"CGO_ENABLED=1",
-		"$GOANDROID/go install", allFlagString,
+		"$GOANDROID/go install", t.Flags.String("flags"),
 		"$GOFLAGS",
 		`-ldflags=\"-android -shared -extld $NDK_ROOT/bin/arm-linux-androideabi-gcc -extldflags '-march=armv7-a -mfloat-abi=softfp -mfpu=vfpv3-d16'\"`,
 		"-tags android",
@@ -202,17 +192,17 @@ func buildAndroid(t *tasking.T, buildAll bool) {
 
 }
 
-func runXorg(t *tasking.T, flags string) {
+func runXorg(t *tasking.T) {
 	err := t.Exec(
 		filepath.Join("bin", LibName),
-		flags,
+		t.Flags.String("flags"),
 	)
 	if err != nil {
 		t.Error(err)
 	}
 }
 
-func runAndroid(t *tasking.T, flags string) {
+func runAndroid(t *tasking.T) {
 	deployAndroid(t)
 	err := t.Exec(
 		fmt.Sprintf(
@@ -223,8 +213,8 @@ func runAndroid(t *tasking.T, flags string) {
 	if err != nil {
 		t.Error(err)
 	}
-	if t.Flags.Bool("logcat") {
-		err = t.Exec("adb shell logcat")
+	if tags := t.Flags.String("logcat"); tags != "" {
+		err = t.Exec("adb", "shell", "logcat", tags)
 		if err != nil {
 			t.Error(err)
 		}
