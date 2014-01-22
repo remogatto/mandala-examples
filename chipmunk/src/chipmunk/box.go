@@ -8,7 +8,7 @@ import (
 
 const (
 	BoxMass       = 1.0
-	BoxElasticity = 0.6
+	BoxElasticity = 0.8
 )
 
 type box struct {
@@ -18,6 +18,8 @@ type box struct {
 
 	// OpenGL stuff
 	openglShape *shapes.Box
+
+	world *world
 }
 
 func newBox(width, height float32) *box {
@@ -48,4 +50,10 @@ func (box *box) draw() {
 	box.openglShape.Position(float32(pos.X), float32(pos.Y))
 	box.openglShape.Rotate(float32(rot))
 	box.openglShape.Draw()
+}
+
+func (box *box) inViewport() bool {
+	pos := box.physicsBody.Position()
+	width := box.openglShape.Width
+	return float32(pos.X) > -width && float32(pos.X) < (width+float32(box.world.width))
 }

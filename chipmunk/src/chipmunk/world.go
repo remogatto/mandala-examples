@@ -41,9 +41,18 @@ func (w *world) View() mathgl.Mat4f {
 }
 
 func (w *world) addBox(box *box) *box {
+	box.world = w
 	w.space.AddBody(box.physicsBody)
 	box.openglShape.AttachToWorld(w)
 	w.boxes = append(w.boxes, box)
+	return box
+}
+
+func (w *world) removeBox(box *box, index int) *box {
+	box.world = nil
+	w.space.RemoveBody(box.physicsBody)
+	w.boxes[index] = nil
+	w.boxes = append(w.boxes[:index], w.boxes[index+1:]...)
 	return box
 }
 

@@ -1,6 +1,7 @@
 package main
 
 import (
+	"image/color/palette"
 	"math"
 	"math/rand"
 	"runtime"
@@ -13,7 +14,8 @@ import (
 )
 
 const (
-	FramesPerSecond = 24
+	FramesPerSecond = 30
+	NumOfBoxes      = 50
 )
 
 type viewportSize struct {
@@ -43,15 +45,17 @@ func newGameState(window mandala.Window) *gameState {
 
 	// Set the ground
 
-	s.world.setGround(newGround(0, float32(h/2), float32(w), float32(h/2)))
+	s.world.setGround(newGround(0, float32(h/3), float32(w), float32(h/3)))
 
-	// Add a box
-
-	box := s.world.addBox(newBox(50, 50))
-
-	// Initial position and angle of the box
-	box.physicsBody.SetPosition(vect.Vect{vect.Float(w / 2), vect.Float(h)})
-	box.physicsBody.SetAngle(vect.Float(rand.Float32() * 2 * math.Pi))
+	// Add boxes
+	rand.Seed(int64(time.Now().Nanosecond()))
+	for i := 0; i < NumOfBoxes; i++ {
+		box := s.world.addBox(newBox(40, 40))
+		// Initial position and angle of the box
+		box.physicsBody.SetPosition(vect.Vect{vect.Float(rand.Float32() * float32(w)), vect.Float(h)})
+		box.physicsBody.SetAngle(vect.Float(rand.Float32() * 2 * math.Pi))
+		box.openglShape.Color(palette.Plan9[rand.Intn(len(palette.Plan9))])
+	}
 
 	gl.ClearColor(0.0, 0.0, 0.0, 1.0)
 	gl.Clear(gl.COLOR_BUFFER_BIT)
@@ -73,8 +77,14 @@ func (s *gameState) draw() {
 
 	s.world.space.Step(vect.Float(1 / float32(FramesPerSecond)))
 
-	for _, box := range s.world.boxes {
-		box.draw()
+	for i := 0; i < len(s.world.boxes); i++ {
+		box := s.world.boxes[i]
+		if box.inViewport() {
+			box.draw()
+		} else {
+			s.world.removeBox(box, i)
+			i--
+		}
 	}
 
 	s.world.ground.draw()
