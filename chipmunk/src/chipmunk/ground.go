@@ -15,7 +15,7 @@ const (
 type ground struct {
 	physicsShape *chipmunk.Shape
 	physicsBody  *chipmunk.Body
-	openglShape  *shapes.Line
+	openglShape  *shapes.Segment
 }
 
 func newGround(x1, y1, x2, y2 float32) *ground {
@@ -33,7 +33,7 @@ func newGround(x1, y1, x2, y2 float32) *ground {
 
 	// OpenGL shape
 
-	ground.openglShape = shapes.NewLine(x1, y1, x2, y2)
+	ground.openglShape = shapes.NewSegment(x1, y1, x2, y2)
 	ground.openglShape.Color(color.White)
 
 	return ground
