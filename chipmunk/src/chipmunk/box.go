@@ -54,6 +54,6 @@ func (box *box) draw() {
 
 func (box *box) inViewport() bool {
 	pos := box.physicsBody.Position()
-	width := box.openglShape.Width
+	width, _ := box.openglShape.GetSize()
 	return float32(pos.X) > -width && float32(pos.X) < (width+float32(box.world.width))
 }
