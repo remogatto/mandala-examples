@@ -1,13 +1,13 @@
 package main
 
 import (
-	"image/color/palette"
 	"math"
 	"math/rand"
 	"runtime"
 	"time"
 
 	"git.tideland.biz/goas/loop"
+	colorful "github.com/lucasb-eyer/go-colorful"
 	"github.com/remogatto/mandala"
 	gl "github.com/remogatto/opengles2"
 	"github.com/vova616/chipmunk/vect"
@@ -54,7 +54,7 @@ func newGameState(window mandala.Window) *gameState {
 		// Initial position and angle of the box
 		box.physicsBody.SetPosition(vect.Vect{vect.Float(rand.Float32() * float32(w)), vect.Float(h)})
 		box.physicsBody.SetAngle(vect.Float(rand.Float32() * 2 * math.Pi))
-		box.openglShape.Color(palette.Plan9[rand.Intn(len(palette.Plan9))])
+		box.openglShape.Color(colorful.HappyColor())
 	}
 
 	gl.ClearColor(0.0, 0.0, 0.0, 1.0)
@@ -119,7 +119,6 @@ func renderLoopFunc(control *renderLoopControl) loop.LoopFunc {
 				width, height := window.GetSize()
 				gl.Viewport(0, 0, gl.Sizei(width), gl.Sizei(height))
 
-				mandala.Logf("Restarting rendering loop...")
 				ticker = time.NewTicker(time.Duration(time.Second / time.Duration(FramesPerSecond)))
 
 			// At each tick render a frame and swap buffers.

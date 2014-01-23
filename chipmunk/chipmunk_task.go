@@ -140,7 +140,7 @@ func buildXorg(t *tasking.T) {
 	err := t.Exec(
 		`sh -c "`,
 		"GOPATH=`pwd`:$GOPATH",
-		`go install`, t.Flags.String("flags"),
+		`go get`, t.Flags.String("flags"),
 		LibName, `"`,
 	)
 	if err != nil {
@@ -160,7 +160,7 @@ func buildAndroid(t *tasking.T) {
 		"GOARCH=arm",
 		"GOARM=7",
 		"CGO_ENABLED=1",
-		"$GOANDROID/go install", t.Flags.String("flags"),
+		"$GOANDROID/go get", t.Flags.String("flags"),
 		"$GOFLAGS",
 		`-ldflags=\"-android -shared -extld $NDK_ROOT/bin/arm-linux-androideabi-gcc -extldflags '-march=armv7-a -mfloat-abi=softfp -mfpu=vfpv3-d16'\"`,
 		"-tags android",
