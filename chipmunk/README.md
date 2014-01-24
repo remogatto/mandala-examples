@@ -1,7 +1,9 @@
-# Chipmunk example
+# Chipmunk Proof of Concept Demo
 
-The example show the use of the chipmunk physics engine to animate a
-set of boxes falling down from the sky and hitting the ground.
+The example is a [Mandala](https://github.com/remogatto/mandala) Proof of Concept demo. It shows the use of a [pure Go implementation](https://github.com/vova616/chipmunk) of the chipmunk physics engine to animate a
+set of boxes falling down from the sky and hitting the buildings below. If you like to see the demo in movement, check this [video](http://www.youtube.com/watch?v=HtDB7rgn9Z0).
+
+![Mandala+Chipmunk](http://remogatto.github.io/images/mandala_chipmunk.png)
 
 # Usage
 
