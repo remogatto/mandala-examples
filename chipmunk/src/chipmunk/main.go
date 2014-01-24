@@ -21,7 +21,7 @@ func main() {
 
 	verbose := flag.Bool("verbose", false, "produce verbose output")
 	debug := flag.Bool("debug", false, "produce debug output")
-	size := flag.String("size", "320x480", "set the size of the window")
+	size := flag.String("size", "480x320", "set the size of the window")
 
 	flag.Parse()
 

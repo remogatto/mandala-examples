@@ -44,7 +44,7 @@ func newGameState(window mandala.Window) *gameState {
 
 	// Set the ground
 
-	s.world.setGround(newGround(0, float32(h/3), float32(w), float32(h/3)))
+	s.world.setGround(newGround(0, float32(10), float32(w), float32(10)))
 
 	// Create the building reading it from a string
 	rand.Seed(int64(time.Now().Nanosecond()))
