@@ -5,6 +5,7 @@ package main
 import (
 	"flag"
 	"fmt"
+	"log"
 	"runtime"
 	"strconv"
 	"strings"
@@ -66,8 +67,7 @@ func main() {
 		renderLoopFunc(renderLoopControl),
 		func(rs loop.Recoverings) (loop.Recoverings, error) {
 			for _, r := range rs {
-				mandala.Logf("%s", r.Reason)
-				mandala.Logf("%s", mandala.Stacktrace())
+				log.Printf("%s\n%s", r.Reason, mandala.Stacktrace())
 			}
 			return rs, fmt.Errorf("Unrecoverable loop\n")
 		},
@@ -77,8 +77,7 @@ func main() {
 		eventLoopFunc(renderLoopControl),
 		func(rs loop.Recoverings) (loop.Recoverings, error) {
 			for _, r := range rs {
-				mandala.Logf("%s", r.Reason)
-				mandala.Logf("%s", mandala.Stacktrace())
+				log.Printf("%s\n%s", r.Reason, mandala.Stacktrace())
 			}
 			return rs, fmt.Errorf("Unrecoverable loop\n")
 		},

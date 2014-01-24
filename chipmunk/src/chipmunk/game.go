@@ -1,13 +1,11 @@
 package main
 
 import (
-	"math"
 	"math/rand"
 	"runtime"
 	"time"
 
 	"git.tideland.biz/goas/loop"
-	colorful "github.com/lucasb-eyer/go-colorful"
 	"github.com/remogatto/mandala"
 	gl "github.com/remogatto/opengles2"
 	"github.com/vova616/chipmunk/vect"
@@ -27,6 +25,7 @@ type renderLoopControl struct {
 	pause          chan bool
 	resume         chan bool
 	window         chan mandala.Window
+	tapEvent       chan [2]float32
 }
 
 type gameState struct {
@@ -47,15 +46,9 @@ func newGameState(window mandala.Window) *gameState {
 
 	s.world.setGround(newGround(0, float32(h/3), float32(w), float32(h/3)))
 
-	// Add boxes
+	// Create the building reading it from a string
 	rand.Seed(int64(time.Now().Nanosecond()))
-	for i := 0; i < NumOfBoxes; i++ {
-		box := s.world.addBox(newBox(40, 40))
-		// Initial position and angle of the box
-		box.physicsBody.SetPosition(vect.Vect{vect.Float(rand.Float32() * float32(w)), vect.Float(h)})
-		box.physicsBody.SetAngle(vect.Float(rand.Float32() * 2 * math.Pi))
-		box.openglShape.Color(colorful.HappyColor())
-	}
+	s.world.createFromString(pyramid)
 
 	gl.ClearColor(0.0, 0.0, 0.0, 1.0)
 	gl.Clear(gl.COLOR_BUFFER_BIT)
@@ -69,6 +62,7 @@ func newRenderLoopControl() *renderLoopControl {
 		make(chan bool),
 		make(chan bool),
 		make(chan mandala.Window, 1),
+		make(chan [2]float32),
 	}
 }
 
@@ -121,6 +115,9 @@ func renderLoopFunc(control *renderLoopControl) loop.LoopFunc {
 
 				ticker = time.NewTicker(time.Duration(time.Second / time.Duration(FramesPerSecond)))
 
+			case tap := <-control.tapEvent:
+				state.world.dropBox(tap[0], tap[1])
+
 			// At each tick render a frame and swap buffers.
 			case <-ticker.C:
 				state.draw()
@@ -161,9 +158,7 @@ func eventLoopFunc(renderLoopControl *renderLoopControl) loop.LoopFunc {
 				// Finger down/up on the screen.
 				case mandala.ActionUpDownEvent:
 					if event.Down {
-						mandala.Logf("Finger is DOWN at %f %f", event.X, event.Y)
-					} else {
-						mandala.Logf("Finger is now UP")
+						renderLoopControl.tapEvent <- [2]float32{event.X, event.Y}
 					}
 
 					// Finger is moving on the screen.

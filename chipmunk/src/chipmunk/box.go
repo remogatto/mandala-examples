@@ -7,8 +7,11 @@ import (
 )
 
 const (
-	BoxMass       = 1.0
-	BoxElasticity = 0.8
+	BoxMass       = 100.0
+	BoxElasticity = 0.1
+
+	// BoxSize is in pixel²
+	BoxSize = 50 * 50
 )
 
 type box struct {

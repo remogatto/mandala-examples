@@ -15,58 +15,6 @@ const (
 	TEX_COORD_MAX = 1
 )
 
-type buffer struct {
-	target uint32
-}
-
-func (b *buffer) bind() {
-	gl.BindBuffer(gl.ARRAY_BUFFER, b.target)
-}
-
-type BufferByte struct {
-	data []byte
-	buffer
-}
-
-func (b *BufferByte) Len() int {
-	return len(b.data)
-}
-
-func (b *BufferByte) Data() []byte {
-	return b.data
-}
-
-type BufferFloat struct {
-	data []float32
-	buffer
-}
-
-func (b *BufferFloat) Len() int {
-	return len(b.data)
-}
-
-func (b *BufferFloat) Data() []float32 {
-	return b.data
-}
-
-func NewBufferByte(data []byte) *BufferByte {
-	b := new(BufferByte)
-	b.data = data
-	gl.GenBuffers(1, &b.target)
-	b.bind()
-	gl.BufferData(gl.ARRAY_BUFFER, gl.SizeiPtr(len(b.data)), gl.Void(&b.data[0]), gl.STATIC_DRAW)
-	return b
-}
-
-func NewBufferFloat(data []float32) *BufferFloat {
-	b := new(BufferFloat)
-	b.data = data
-	gl.GenBuffers(1, &b.target)
-	b.bind()
-	gl.BufferData(gl.ARRAY_BUFFER, gl.SizeiPtr(len(b.data))*SizeOfFloat, gl.Void(&b.data[0]), gl.STATIC_DRAW)
-	return b
-}
-
 func check() {
 	error := gl.GetError()
 	if error != 0 {
@@ -239,7 +187,6 @@ func (c *Cube) Draw() {
 	c.Vertices.bind()
 	gl.VertexAttribPointer(c.attrPos, 4, gl.FLOAT, false, SizeOfFloat*6, 0)
 	gl.VertexAttribPointer(c.attrTexIn, 2, gl.FLOAT, false, 6*SizeOfFloat, 4*SizeOfFloat)
-	//	gl.VertexAttribPointer(c.attrColor, 4, gl.FLOAT, false, SizeOfFloat*8, SizeOfFloat*4)
 
 	gl.UniformMatrix4fv(int32(c.uniformModel), 1, false, (*float32)(&c.model[0]))
 	gl.UniformMatrix4fv(int32(c.uniformProjectionView), 1, false, (*float32)(&c.projectionView[0]))
