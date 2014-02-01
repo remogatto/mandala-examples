@@ -29,6 +29,7 @@ func newGround(x1, y1, x2, y2 float32) *ground {
 		vect.Vect{vect.Float(x2), vect.Float(y2)},
 		GroundRadius,
 	)
+
 	ground.physicsBody.AddShape(ground.physicsShape)
 
 	// OpenGL shape

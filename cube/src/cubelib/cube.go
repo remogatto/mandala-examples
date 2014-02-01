@@ -23,9 +23,9 @@ func check() {
 }
 
 type Cube struct {
-	Vertices                      *BufferFloat
+	Vertices                      []float32
 	Program                       Program
-	indices                       *BufferByte
+	indices                       []byte
 	textureBuffer                 uint32
 	attrPos, attrColor, attrTexIn uint32
 	uniformTexture                uint32
@@ -38,7 +38,7 @@ func NewCube() *Cube {
 	cube := new(Cube)
 	cube.model = mathgl.Ident4f()
 
-	cube.Vertices = NewBufferFloat([]float32{
+	cube.Vertices = []float32{
 		// Front
 		1, -1, 1, 1, TEX_COORD_MAX, 0,
 		1, 1, 1, 1, TEX_COORD_MAX, TEX_COORD_MAX,
@@ -69,8 +69,8 @@ func NewCube() *Cube {
 		1, -1, 1, 1, TEX_COORD_MAX, TEX_COORD_MAX,
 		-1, -1, 1, 1, 0, TEX_COORD_MAX,
 		-1, -1, -1, 1, 0, 0,
-	})
-	cube.indices = NewBufferByte([]byte{
+	}
+	cube.indices = []byte{
 		// Front
 		0, 1, 2,
 		2, 3, 0,
@@ -89,7 +89,7 @@ func NewCube() *Cube {
 		// Bottom
 		20, 21, 22,
 		22, 23, 20,
-	})
+	}
 
 	fragmentShader := (FragmentShader)(`
         precision mediump float;
@@ -184,9 +184,9 @@ func (c *Cube) AttachTextureFromBuffer(buffer []byte, width, height int) {
 
 func (c *Cube) Draw() {
 	c.Program.Use()
-	c.Vertices.bind()
-	gl.VertexAttribPointer(c.attrPos, 4, gl.FLOAT, false, SizeOfFloat*6, 0)
-	gl.VertexAttribPointer(c.attrTexIn, 2, gl.FLOAT, false, 6*SizeOfFloat, 4*SizeOfFloat)
+
+	gl.VertexAttribPointer(c.attrPos, 4, gl.FLOAT, false, SizeOfFloat*6, &c.Vertices[0])
+	gl.VertexAttribPointer(c.attrTexIn, 2, gl.FLOAT, false, 6*SizeOfFloat, &c.Vertices[4])
 
 	gl.UniformMatrix4fv(int32(c.uniformModel), 1, false, (*float32)(&c.model[0]))
 	gl.UniformMatrix4fv(int32(c.uniformProjectionView), 1, false, (*float32)(&c.projectionView[0]))
@@ -195,7 +195,7 @@ func (c *Cube) Draw() {
 	gl.BindTexture(gl.TEXTURE_2D, c.textureBuffer)
 	gl.Uniform1i(int32(c.uniformTexture), 0)
 
-	gl.DrawElements(gl.TRIANGLES, gl.Sizei(c.indices.Len()), gl.UNSIGNED_BYTE, gl.Void(&c.indices.Data()[0]))
+	gl.DrawElements(gl.TRIANGLES, gl.Sizei(len(c.indices)), gl.UNSIGNED_BYTE, gl.Void(&c.indices[0]))
 	gl.Flush()
 	gl.Finish()
 }

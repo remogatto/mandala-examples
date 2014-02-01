@@ -36,19 +36,23 @@ type gameState struct {
 func newGameState(window mandala.Window) *gameState {
 	s := new(gameState)
 	s.window = window
-	w, h := window.GetSize()
 
 	s.window.MakeContextCurrent()
 
+	w, h := window.GetSize()
+
 	s.world = newWorld(w, h)
-
-	// Set the ground
-
-	s.world.setGround(newGround(0, float32(10), float32(w), float32(10)))
 
 	// Create the building reading it from a string
 	rand.Seed(int64(time.Now().Nanosecond()))
-	s.world.createFromString(pyramid)
+
+	// Uncomment the following lines to generate the world
+	// starting from a string (defined in world.go)
+
+	// s.world.createFromString(pyramid)
+	// s.world.setGround(newGround(0, float32(10), float32(w), float32(10)))
+
+	s.world.createFromSvg("res/raw/world.svg")
 
 	gl.ClearColor(0.0, 0.0, 0.0, 1.0)
 	gl.Clear(gl.COLOR_BUFFER_BIT)
@@ -116,7 +120,7 @@ func renderLoopFunc(control *renderLoopControl) loop.LoopFunc {
 				ticker = time.NewTicker(time.Duration(time.Second / time.Duration(FramesPerSecond)))
 
 			case tap := <-control.tapEvent:
-				state.world.dropBox(tap[0], tap[1])
+				state.world.explosion(tap[0], tap[1])
 
 			// At each tick render a frame and swap buffers.
 			case <-ticker.C:

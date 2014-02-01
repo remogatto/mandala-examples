@@ -111,6 +111,18 @@ func (w *world) dropBox(x, y float32) {
 	w.addBox(box)
 }
 
+func (w *world) explosion(x, y float32) {
+	y = float32(w.height) - y
+	for _, box := range w.boxes {
+		cx, cy := box.openglShape.Center()
+		force := vect.Sub(vect.Vect{vect.Float(cx), vect.Float(cy)}, vect.Vect{vect.Float(x), vect.Float(y)})
+		length := force.Length()
+		force.Normalize()
+		force.Mult(vect.Float(1 / length * 3e6))
+		box.physicsBody.SetForce(float32(force.X), float32(force.Y))
+	}
+}
+
 func (w *world) removeBox(box *box, index int) *box {
 	box.world = nil
 	w.space.RemoveBody(box.physicsBody)

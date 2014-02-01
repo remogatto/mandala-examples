@@ -7,8 +7,8 @@ import (
 )
 
 const (
-	BoxMass       = 100.0
-	BoxElasticity = 0.1
+	BoxMass       = 5.0
+	BoxElasticity = 0.6
 
 	// BoxSize is in pixel²
 	BoxSize = 50 * 50

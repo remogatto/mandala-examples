@@ -1,6 +1,7 @@
 package main
 
 import (
+	"bytes"
 	"image"
 	"image/png"
 	"runtime"
@@ -236,7 +237,7 @@ func loadImage(filename string) (image.Image, error) {
 	}
 
 	// Decode the image.
-	img, err := png.Decode(response.Buffer)
+	img, err := png.Decode(bytes.NewBuffer(response.Buffer))
 	if err != nil {
 		return nil, err
 	}
