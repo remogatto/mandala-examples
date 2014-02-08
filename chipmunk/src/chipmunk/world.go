@@ -5,6 +5,7 @@ import (
 	"math/rand"
 
 	"github.com/lucasb-eyer/go-colorful"
+	"github.com/remogatto/mandala"
 	"github.com/remogatto/mathgl"
 	"github.com/vova616/chipmunk"
 	"github.com/vova616/chipmunk/vect"
@@ -26,12 +27,14 @@ var (
 )
 
 type world struct {
-	width, height int
-	projMatrix    mathgl.Mat4f
-	viewMatrix    mathgl.Mat4f
-	space         *chipmunk.Space
-	boxes         []*box
-	ground        *ground
+	width, height                 int
+	projMatrix                    mathgl.Mat4f
+	viewMatrix                    mathgl.Mat4f
+	space                         *chipmunk.Space
+	boxes                         []*box
+	ground                        *ground
+	explosionPlayer               *mandala.AudioPlayer
+	explosionBuffer, impactBuffer []byte
 }
 
 func newWorld(width, height int) *world {
@@ -42,7 +45,35 @@ func newWorld(width, height int) *world {
 		viewMatrix: mathgl.Ident4f(),
 		space:      chipmunk.NewSpace(),
 	}
+
 	world.space.Gravity = vect.Vect{0, Gravity}
+
+	// Initialize the audio player
+	var err error
+	world.explosionPlayer, err = mandala.NewAudioPlayer()
+	if err != nil {
+		mandala.Fatalf("%s\n", err.Error())
+	}
+
+	// Read the PCM audio samples
+	responseCh := make(chan mandala.LoadResourceResponse)
+	mandala.ReadResource("raw/explosion.pcm", responseCh)
+	response := <-responseCh
+
+	if response.Error != nil {
+		mandala.Fatalf(response.Error.Error())
+	}
+	world.explosionBuffer = response.Buffer
+
+	responseCh = make(chan mandala.LoadResourceResponse)
+	mandala.ReadResource("raw/impact.pcm", responseCh)
+	response = <-responseCh
+
+	if response.Error != nil {
+		mandala.Fatalf(response.Error.Error())
+	}
+	world.impactBuffer = response.Buffer
+
 	return world
 }
 
@@ -99,6 +130,7 @@ func (w *world) addBox(box *box) *box {
 	w.space.AddBody(box.physicsBody)
 	box.openglShape.AttachToWorld(w)
 	w.boxes = append(w.boxes, box)
+	box.physicsBody.UserData = impactUserData{box.player, w.impactBuffer}
 	return box
 }
 
@@ -112,6 +144,9 @@ func (w *world) dropBox(x, y float32) {
 }
 
 func (w *world) explosion(x, y float32) {
+
+	w.explosionPlayer.Play(w.explosionBuffer, nil)
+
 	y = float32(w.height) - y
 	for _, box := range w.boxes {
 		cx, cy := box.openglShape.Center()

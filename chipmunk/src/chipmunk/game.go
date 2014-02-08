@@ -52,7 +52,7 @@ func newGameState(window mandala.Window) *gameState {
 	// s.world.createFromString(pyramid)
 	// s.world.setGround(newGround(0, float32(10), float32(w), float32(10)))
 
-	s.world.createFromSvg("res/raw/world.svg")
+	s.world.createFromSvg("raw/world.svg")
 
 	gl.ClearColor(0.0, 0.0, 0.0, 1.0)
 	gl.Clear(gl.COLOR_BUFFER_BIT)

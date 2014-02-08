@@ -41,12 +41,10 @@ type svgFile struct {
 func (w *world) createFromSvg(filename string) {
 	var svg svgFile
 
-	request := mandala.LoadAssetRequest{
-		Filename: filename,
-		Response: make(chan mandala.LoadAssetResponse),
-	}
-	mandala.AssetManager() <- request
-	response := <-request.Response
+	responseCh := make(chan mandala.LoadResourceResponse)
+	mandala.ReadResource(filename, responseCh)
+	response := <-responseCh
+
 	if response.Error != nil {
 		mandala.Fatalf(response.Error.Error())
 	}
