@@ -43,7 +43,7 @@ func (c callbacks) CollisionEnter(arbiter *chipmunk.Arbiter) bool {
 	if ok {
 		impact.player.Play(impact.impactBuffer, nil)
 	}
-	impact = b.UserData.(impactUserData)
+	impact, ok = b.UserData.(impactUserData)
 	if ok {
 		impact.player.Play(impact.impactBuffer, nil)
 	}
@@ -101,5 +101,5 @@ func (box *box) draw() {
 func (box *box) inViewport() bool {
 	pos := box.physicsBody.Position()
 	width, _ := box.openglShape.GetSize()
-	return float32(pos.X) > -width && float32(pos.X) < (width+float32(box.world.width))
+	return (float32(pos.X) > -width) && (float32(pos.X) < (width + float32(box.world.width)))
 }

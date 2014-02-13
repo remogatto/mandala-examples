@@ -56,6 +56,7 @@ func newWorld(width, height int) *world {
 	}
 
 	// Read the PCM audio samples
+
 	responseCh := make(chan mandala.LoadResourceResponse)
 	mandala.ReadResource("raw/explosion.pcm", responseCh)
 	response := <-responseCh
@@ -144,9 +145,7 @@ func (w *world) dropBox(x, y float32) {
 }
 
 func (w *world) explosion(x, y float32) {
-
 	w.explosionPlayer.Play(w.explosionBuffer, nil)
-
 	y = float32(w.height) - y
 	for _, box := range w.boxes {
 		cx, cy := box.openglShape.Center()
@@ -158,12 +157,11 @@ func (w *world) explosion(x, y float32) {
 	}
 }
 
-func (w *world) removeBox(box *box, index int) *box {
-	box.world = nil
+func (w *world) removeBox(box *box, index int) {
+	box.player.Destroy()
+	box.physicsBody.UserData = nil
 	w.space.RemoveBody(box.physicsBody)
-	w.boxes[index] = nil
 	w.boxes = append(w.boxes[:index], w.boxes[index+1:]...)
-	return box
 }
 
 func (w *world) setGround(ground *ground) *ground {
@@ -171,4 +169,11 @@ func (w *world) setGround(ground *ground) *ground {
 	ground.openglShape.AttachToWorld(w)
 	w.ground = ground
 	return ground
+}
+
+func (w *world) destroy() {
+	for i := 0; i < len(w.boxes); i++ {
+		w.removeBox(w.boxes[i], i)
+		i--
+	}
 }

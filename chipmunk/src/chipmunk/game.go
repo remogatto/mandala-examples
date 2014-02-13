@@ -22,7 +22,7 @@ type viewportSize struct {
 
 type renderLoopControl struct {
 	resizeViewport chan viewportSize
-	pause          chan bool
+	pause          chan mandala.PauseEvent
 	resume         chan bool
 	window         chan mandala.Window
 	tapEvent       chan [2]float32
@@ -63,7 +63,7 @@ func newGameState(window mandala.Window) *gameState {
 func newRenderLoopControl() *renderLoopControl {
 	return &renderLoopControl{
 		make(chan viewportSize),
-		make(chan bool),
+		make(chan mandala.PauseEvent),
 		make(chan bool),
 		make(chan mandala.Window, 1),
 		make(chan [2]float32),
@@ -127,8 +127,10 @@ func renderLoopFunc(control *renderLoopControl) loop.LoopFunc {
 				state.draw()
 				state.window.SwapBuffers()
 
-			case <-control.pause:
+			case event := <-control.pause:
 				ticker.Stop()
+				state.world.destroy()
+				event.Paused <- true
 
 			case <-control.resume:
 
@@ -170,15 +172,14 @@ func eventLoopFunc(renderLoopControl *renderLoopControl) loop.LoopFunc {
 					mandala.Logf("Finger is moving at coord %f %f", event.X, event.Y)
 
 				case mandala.DestroyEvent:
-					mandala.Logf("Stop rendering...\n")
-					mandala.Logf("Quitting from application...\n")
+					mandala.Logf("Quitting from application now...\n")
 					return nil
 
 				case mandala.NativeWindowRedrawNeededEvent:
 
 				case mandala.PauseEvent:
 					mandala.Logf("Application was paused. Stopping rendering ticker.")
-					renderLoopControl.pause <- true
+					renderLoopControl.pause <- event
 
 				case mandala.ResumeEvent:
 					mandala.Logf("Application was resumed. Reactivating rendering ticker.")
