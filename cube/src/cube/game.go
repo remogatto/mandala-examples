@@ -23,7 +23,7 @@ type viewportSize struct {
 
 type renderLoopControl struct {
 	resizeViewport chan viewportSize
-	pause          chan bool
+	pause          chan mandala.PauseEvent
 	resume         chan bool
 	window         chan mandala.Window
 }
@@ -47,7 +47,7 @@ func (renderState *renderState) init(window mandala.Window) {
 
 	renderState.cube = cubelib.NewCube()
 
-	img, err := loadImage("res/drawable/marmo.png")
+	img, err := loadImage("drawable/marmo.png")
 	if err != nil {
 		panic(err)
 	}
@@ -60,10 +60,10 @@ func (renderState *renderState) init(window mandala.Window) {
 
 func newRenderLoopControl() *renderLoopControl {
 	return &renderLoopControl{
-		make(chan viewportSize),
-		make(chan bool),
-		make(chan bool),
-		make(chan mandala.Window, 1),
+		resizeViewport: make(chan viewportSize),
+		pause:          make(chan mandala.PauseEvent),
+		resume:         make(chan bool),
+		window:         make(chan mandala.Window, 1),
 	}
 }
 
@@ -113,10 +113,11 @@ func renderLoopFunc(control *renderLoopControl) loop.LoopFunc {
 					}
 				}
 
-			case <-control.pause:
+			case event := <-control.pause:
 				renderState.savedAngle = renderState.angle
 				mandala.Logf("Save an angle value of %f", renderState.savedAngle)
 				ticker.Stop()
+				event.Paused <- true
 
 			case <-control.resume:
 				renderState.angle = renderState.savedAngle
@@ -202,7 +203,7 @@ func eventLoopFunc(renderLoopControl *renderLoopControl) loop.LoopFunc {
 
 				case mandala.PauseEvent:
 					mandala.Logf("Application was paused. Stopping rendering ticker.")
-					renderLoopControl.pause <- true
+					renderLoopControl.pause <- event
 
 				case mandala.ResumeEvent:
 					mandala.Logf("Application was resumed. Reactivating rendering ticker.")
@@ -222,14 +223,14 @@ func check() {
 }
 
 func loadImage(filename string) (image.Image, error) {
-	// Request an asset to the asset manager. When the app runs on
-	// an Android device, the apk will be unpacked and the file
+	// Request an asset to the resource manager. When the app runs
+	// on an Android device, the apk will be unpacked and the file
 	// will be read from it and copied to a byte buffer.
-	request := mandala.LoadAssetRequest{
+	request := mandala.LoadResourceRequest{
 		filename,
-		make(chan mandala.LoadAssetResponse),
+		make(chan mandala.LoadResourceResponse),
 	}
-	mandala.AssetManager() <- request
+	mandala.ResourceManager() <- request
 	response := <-request.Response
 
 	if response.Error != nil {
