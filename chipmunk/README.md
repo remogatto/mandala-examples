@@ -1,4 +1,4 @@
-# Chipmunk Proof of Concept Demo
+# Chipmunk Proof of Concept Demo <a href="https://play.google.com/store/apps/details?id=net.mandala.chipmunk"><img alt="Get it on Google Play" src="https://developer.android.com/images/brand/en_generic_rgb_wo_45.png" /></a>
 
 The example is a [Mandala](https://github.com/remogatto/mandala) Proof
 of Concept demo. It shows the use of a [pure Go
