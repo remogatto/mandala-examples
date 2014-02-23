@@ -30,7 +30,11 @@ var (
 	// Android path
 	AndroidPath = "android"
 
-	buildFun = map[string]func(*tasking.T){
+	// KeyStore and KeyAlias, needed to release the app for Android platform
+	KeyStore = "/home/andrea/backup/my-release-key.keystore"
+	KeyAlias = "remogatto"
+
+	buildFun = map[string]func(*tasking.T, ...bool){
 		"xorg":    buildXorg,
 		"android": buildAndroid,
 	}
@@ -136,7 +140,30 @@ func TaskClean(t *tasking.T) {
 	t.Logf("%-20s %s\n", status(t.Failed()), "Clean all generated files and paths.")
 }
 
-func buildXorg(t *tasking.T) {
+// NAME
+//    release - Build the application in 'release mode'
+//
+// DESCRIPTION
+//    Build the application for Android in 'release mode'.
+//
+// OPTIONS
+//    --flags=<FLAGS>
+//        pass FLAGS to the compiler
+//    --verbose, -v
+//        run in verbose mode
+func TaskRelease(t *tasking.T) {
+	// Build app in 'release mode'
+	buildAndroid(t, true)
+	// Sign and 'zipalign' app
+	signAndroid(t)
+	// Check task
+	if t.Failed() {
+		t.Fatalf("%-20s %s\n", status(t.Failed()), "Release the application for Android.")
+	}
+	t.Logf("%-20s %s\n", status(t.Failed()), "Release the application for Android.")
+}
+
+func buildXorg(t *tasking.T, buildMode ...bool) {
 	err := t.Exec(
 		`sh -c "`,
 		"GOPATH=`pwd`:$GOPATH",
@@ -148,7 +175,15 @@ func buildXorg(t *tasking.T) {
 	}
 }
 
-func buildAndroid(t *tasking.T) {
+func buildAndroid(t *tasking.T, buildMode ...bool) {
+	// Build mode for ant:
+	// buildMode not specified or false => ant debug
+	// buildMode true => ant release
+	antBuildParam := "debug"
+	if len(buildMode) > 0 && buildMode[0] == true {
+		antBuildParam = "release"
+	}
+
 	os.MkdirAll("android/libs/armeabi-v7a", 0777)
 	os.MkdirAll("android/obj/local/armeabi-v7a", 0777)
 
@@ -184,7 +219,7 @@ func buildAndroid(t *tasking.T) {
 	}
 
 	if err == nil {
-		err = t.Exec("ant -f android/build.xml clean debug")
+		err = t.Exec("ant -f android/build.xml clean", antBuildParam)
 		if err != nil {
 			t.Error(err)
 		}
@@ -224,6 +259,26 @@ func runAndroid(t *tasking.T) {
 func deployAndroid(t *tasking.T) {
 	err := t.Exec(fmt.Sprintf("adb install -r android/bin/%s-debug.apk", LibName))
 	if err != nil {
+		t.Error(err)
+	}
+}
+
+// Sign and zipalign Android application.
+func signAndroid(t *tasking.T) {
+	unsignedAppPath := fmt.Sprintf("android/bin/%s-release-unsigned.apk", LibName)
+	// Sign app
+	cmdJarsigner := "jarsigner -verbose -sigalg SHA1withRSA -digestalg SHA1 -keystore %s %s %s"
+	if err := t.Exec(fmt.Sprintf(cmdJarsigner, KeyStore, unsignedAppPath, KeyAlias)); err != nil {
+		t.Error(err)
+	}
+	// Verify sign
+	cmdJarsignerVerify := "jarsigner -verify -verbose -certs %s"
+	if err := t.Exec(fmt.Sprintf(cmdJarsignerVerify, unsignedAppPath)); err != nil {
+		t.Error(err)
+	}
+	// Align app
+	cmdZipAlign := "zipalign -v 4 %s android/bin/%s.apk"
+	if err := t.Exec(fmt.Sprintf(cmdZipAlign, unsignedAppPath, LibName)); err != nil {
 		t.Error(err)
 	}
 }
