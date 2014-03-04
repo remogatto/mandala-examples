@@ -3,9 +3,12 @@
 package tasks
 
 import (
+	"encoding/json"
 	"fmt"
+	"io/ioutil"
 	"os"
 	"path/filepath"
+	"text/template"
 
 	"github.com/jingweno/gotask/tasking"
 )
@@ -184,10 +187,16 @@ func buildAndroid(t *tasking.T, buildMode ...bool) {
 		antBuildParam = "release"
 	}
 
+	// Generate AdmobActivity using the UnitId in admob.json
+	err := generateAdmobActivity()
+	if err != nil {
+		t.Error(err)
+	}
+
 	os.MkdirAll("android/libs/armeabi-v7a", 0777)
 	os.MkdirAll("android/obj/local/armeabi-v7a", 0777)
 
-	err := t.Exec(`sh -c "`,
+	err = t.Exec(`sh -c "`,
 		`CC="$NDK_ROOT/bin/arm-linux-androideabi-gcc"`,
 		"GOPATH=`pwd`:$GOPATH",
 		`GOROOT=""`,
@@ -241,7 +250,7 @@ func runAndroid(t *tasking.T) {
 	deployAndroid(t)
 	err := t.Exec(
 		fmt.Sprintf(
-			"adb shell am start -a android.intent.action.MAIN -n %s.%s/android.app.NativeActivity",
+			"adb shell am start -a android.intent.action.MAIN -n %s.%s/.AdmobActivity",
 			Domain,
 			LibName,
 		))
@@ -281,6 +290,43 @@ func signAndroid(t *tasking.T) {
 	if err := t.Exec(fmt.Sprintf(cmdZipAlign, unsignedAppPath, LibName)); err != nil {
 		t.Error(err)
 	}
+}
+
+func generateAdmobActivity() error {
+	var admob map[string]string
+	jsonBuffer, err := ioutil.ReadFile("admob.json")
+	if err != nil {
+		return err
+	}
+	err = json.Unmarshal(jsonBuffer, &admob)
+	if err != nil {
+		return err
+	}
+
+	// Open and read the template
+	srcBuffer, err := ioutil.ReadFile("android/src/net/mandala/chipmunk/AdmobActivity.java.template")
+	if err != nil {
+		return err
+	}
+
+	// Create destination file
+	dstFile, err := os.Create("android/src/net/mandala/chipmunk/AdmobActivity.java")
+	if err != nil {
+		return err
+	}
+
+	defer dstFile.Close()
+
+	tmpl, err := template.New("AdmobActivity template").Parse(string(srcBuffer))
+	if err != nil {
+		return err
+	}
+
+	err = tmpl.Execute(dstFile, admob)
+	if err != nil {
+		return err
+	}
+	return nil
 }
 
 func cp(t *tasking.T, src, dest string) error {

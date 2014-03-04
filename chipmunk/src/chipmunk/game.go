@@ -4,6 +4,7 @@ import (
 	"math/rand"
 	"runtime"
 	"time"
+	"unsafe"
 
 	"git.tideland.biz/goas/loop"
 	"github.com/remogatto/mandala"
@@ -16,16 +17,16 @@ const (
 	NumOfBoxes      = 50
 )
 
-type viewportSize struct {
-	width, height int
+type initData struct {
+	window   mandala.Window
+	activity unsafe.Pointer
 }
 
 type renderLoopControl struct {
-	resizeViewport chan viewportSize
-	pause          chan mandala.PauseEvent
-	resume         chan bool
-	window         chan mandala.Window
-	tapEvent       chan [2]float32
+	pause    chan mandala.PauseEvent
+	resume   chan bool
+	init     chan initData
+	tapEvent chan [2]float32
 }
 
 type gameState struct {
@@ -62,10 +63,9 @@ func newGameState(window mandala.Window) *gameState {
 
 func newRenderLoopControl() *renderLoopControl {
 	return &renderLoopControl{
-		make(chan viewportSize),
 		make(chan mandala.PauseEvent),
 		make(chan bool),
-		make(chan mandala.Window, 1),
+		make(chan initData, 1),
 		make(chan [2]float32),
 	}
 }
@@ -109,13 +109,18 @@ func renderLoopFunc(control *renderLoopControl) loop.LoopFunc {
 
 		for {
 			select {
-			case window := <-control.window:
+			case init := <-control.init:
+				window := init.window
+				activity := init.activity
+
 				ticker.Stop()
 
 				state = newGameState(window)
 
 				width, height := window.GetSize()
 				gl.Viewport(0, 0, gl.Sizei(width), gl.Sizei(height))
+
+				ShowAdPopup(activity)
 
 				ticker = time.NewTicker(time.Duration(time.Second / time.Duration(FramesPerSecond)))
 
@@ -159,7 +164,7 @@ func eventLoopFunc(renderLoopControl *renderLoopControl) loop.LoopFunc {
 				// order to begin the
 				// rendering process.
 				case mandala.NativeWindowCreatedEvent:
-					renderLoopControl.window <- event.Window
+					renderLoopControl.init <- initData{event.Window, event.Activity}
 
 				// Finger down/up on the screen.
 				case mandala.ActionUpDownEvent:

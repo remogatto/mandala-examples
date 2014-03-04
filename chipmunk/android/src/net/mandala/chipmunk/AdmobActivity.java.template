@@ -1,0 +1,128 @@
+package net.mandala.chipmunk;
+
+import android.app.NativeActivity;
+
+import com.google.android.gms.ads.AdRequest;
+import com.google.android.gms.ads.AdSize;
+import com.google.android.gms.ads.AdView;
+
+import android.app.Activity;
+import android.os.Bundle;
+import android.widget.LinearLayout;
+import android.widget.LinearLayout.LayoutParams;
+import android.widget.PopupWindow;
+import android.view.WindowManager;
+import android.view.Gravity;
+import android.view.ViewGroup.MarginLayoutParams;
+
+public class AdmobActivity extends NativeActivity
+{
+    AdView adView;
+    PopupWindow popUp;
+    AdmobActivity _activity;
+    LinearLayout layout;
+    LinearLayout mainLayout;
+    boolean adsinited = false;
+
+    public void onCreate(Bundle savedInstanceState) {
+	super.onCreate(savedInstanceState);
+
+	// Make your custom init here
+
+	getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
+
+	_activity = this;
+
+	// Create our ad view here
+	adView = new AdView(_activity);
+	adView.setAdSize(AdSize.BANNER);
+	adView.setAdUnitId("{{.UnitId}}");
+
+    }
+
+    // Our popup window, you will call it from your C/C++ code later
+
+    public void showAdPopup()
+    {
+	if(adsinited)
+	    {
+		return;
+	    }
+
+	if(adView!=null)  {
+	    _activity.runOnUiThread(new Runnable()  {
+
+		    @Override
+
+		    public void run()  {
+
+			adsinited = true;
+
+			// Out popup window
+
+			popUp = new PopupWindow(_activity);
+
+			// This is the minimum size for AdMob, we need
+			// to set this in case our target device run
+			// at 320x480 resolution (Otherwise no ad will
+			// be shown, see the padding kill below)
+
+			popUp.setWidth(320);
+			popUp.setHeight(50);
+			popUp.setWindowLayoutMode(LayoutParams.WRAP_CONTENT, LayoutParams.WRAP_CONTENT);
+			popUp.setClippingEnabled(false);
+			layout = new LinearLayout(_activity);
+			mainLayout = new LinearLayout(_activity);
+
+			// The layout system for the PopupWindow will
+			// kill some pixels due to margins/paddings
+			// etc...(No way to remove it), so padd it to
+			// adjust
+
+			layout.setPadding(-5, -5, -5, -5);
+			MarginLayoutParams params = new MarginLayoutParams(LayoutParams.WRAP_CONTENT, LayoutParams.WRAP_CONTENT);
+			params.setMargins(0, 0, 0, 0);
+			layout.setOrientation(LinearLayout.VERTICAL);
+			layout.addView(adView, params);
+			popUp.setContentView(layout);
+
+			_activity.setContentView(mainLayout, params);
+
+			// Create an ad request. Check logcat output for the hashed device ID to
+			// get test ads on a physical device.
+			AdRequest adRequest = new AdRequest.Builder()
+			    .addTestDevice(AdRequest.DEVICE_ID_EMULATOR)
+			    .addTestDevice("INSERT_YOUR_HASHED_DEVICE_ID_HERE")
+			    .build();
+
+			// Enable this if your are testing AdMob,
+			// otherwise you'll risk to be banned!
+
+			// adRequest.addTestDevice(AdRequest.TEST_EMULATOR);
+
+			_activity.adView.loadAd(adRequest);
+
+			// Show our popup window
+
+			popUp.showAtLocation(mainLayout, Gravity.BOTTOM, 0, 0);
+
+			popUp.update();
+
+		    }});
+
+	}
+
+    }
+
+    // Do some cleanup
+
+    @Override
+
+    public void onDestroy() {
+	if (adView != null) {
+	    adView.destroy();
+	}
+	super.onDestroy();
+    }
+
+}
