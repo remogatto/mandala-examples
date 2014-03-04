@@ -137,7 +137,7 @@ func (w *world) addBox(box *box) *box {
 
 func (w *world) dropBox(x, y float32) {
 	box := newBox(20, 20)
-	box.physicsBody.SetMass(200)
+	box.physicsBody.SetMass(10)
 	box.physicsBody.AddAngularVelocity(10)
 	box.physicsBody.SetAngle(vect.Float(2 * math.Pi * chipmunk.DegreeConst * rand.Float32()))
 	box.physicsBody.SetPosition(vect.Vect{vect.Float(x), vect.Float(float32(w.height) - y)})
@@ -149,10 +149,12 @@ func (w *world) explosion(x, y float32) {
 	y = float32(w.height) - y
 	for _, box := range w.boxes {
 		cx, cy := box.openglShape.Center()
-		force := vect.Sub(vect.Vect{vect.Float(cx), vect.Float(cy)}, vect.Vect{vect.Float(x), vect.Float(y)})
-		length := force.Length()
+		force := vect.Sub(
+			vect.Vect{vect.Float(cx / float32(w.width)), vect.Float(cy / float32(w.height))},
+			vect.Vect{vect.Float(x / float32(w.width)), vect.Float(y / float32(w.height))},
+		)
 		force.Normalize()
-		force.Mult(vect.Float(1 / length * 3e6))
+		force.Mult(vect.Float(1 / force.Length() * 1e5))
 		box.physicsBody.SetForce(float32(force.X), float32(force.Y))
 	}
 }
