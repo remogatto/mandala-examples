@@ -30,9 +30,6 @@ type box struct {
 	// OpenGL stuff
 	openglShape *shapes.Box
 
-	// Sound player
-	player *mandala.AudioPlayer
-
 	world *world
 }
 
@@ -59,16 +56,7 @@ func (c callbacks) CollisionPostSolve(arbiter *chipmunk.Arbiter) {}
 func (c callbacks) CollisionExit(arbiter *chipmunk.Arbiter) {}
 
 func newBox(width, height float32) *box {
-	var err error
-
 	box := new(box)
-
-	// Sound player
-
-	box.player, err = mandala.NewAudioPlayer()
-	if err != nil {
-		mandala.Fatalf("%s\n", err.Error())
-	}
 
 	// Chipmunk body
 

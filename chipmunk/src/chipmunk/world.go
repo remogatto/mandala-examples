@@ -33,7 +33,7 @@ type world struct {
 	space                         *chipmunk.Space
 	boxes                         []*box
 	ground                        *ground
-	explosionPlayer               *mandala.AudioPlayer
+	explosionPlayer, impactPlayer *mandala.AudioPlayer
 	explosionBuffer, impactBuffer []byte
 }
 
@@ -48,9 +48,14 @@ func newWorld(width, height int) *world {
 
 	world.space.Gravity = vect.Vect{0, Gravity}
 
-	// Initialize the audio player
+	// Initialize the audio players
 	var err error
 	world.explosionPlayer, err = mandala.NewAudioPlayer()
+	if err != nil {
+		mandala.Fatalf("%s\n", err.Error())
+	}
+
+	world.impactPlayer, err = mandala.NewAudioPlayer()
 	if err != nil {
 		mandala.Fatalf("%s\n", err.Error())
 	}
@@ -131,7 +136,7 @@ func (w *world) addBox(box *box) *box {
 	w.space.AddBody(box.physicsBody)
 	box.openglShape.AttachToWorld(w)
 	w.boxes = append(w.boxes, box)
-	box.physicsBody.UserData = impactUserData{box.player, w.impactBuffer}
+	box.physicsBody.UserData = impactUserData{w.impactPlayer, w.impactBuffer}
 	return box
 }
 
@@ -160,7 +165,6 @@ func (w *world) explosion(x, y float32) {
 }
 
 func (w *world) removeBox(box *box, index int) {
-	box.player.Destroy()
 	box.physicsBody.UserData = nil
 	w.space.RemoveBody(box.physicsBody)
 	w.boxes = append(w.boxes[:index], w.boxes[index+1:]...)
@@ -174,6 +178,8 @@ func (w *world) setGround(ground *ground) *ground {
 }
 
 func (w *world) destroy() {
+	w.impactPlayer.Destroy()
+	w.explosionPlayer.Destroy()
 	for i := 0; i < len(w.boxes); i++ {
 		w.removeBox(w.boxes[i], i)
 		i--
