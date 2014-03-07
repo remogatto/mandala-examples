@@ -18,7 +18,7 @@ type ground struct {
 	openglShape  *shapes.Segment
 }
 
-func newGround(x1, y1, x2, y2 float32) *ground {
+func newGround(world *world, x1, y1, x2, y2 float32) *ground {
 	ground := new(ground)
 
 	// Chipmunk body
@@ -34,7 +34,7 @@ func newGround(x1, y1, x2, y2 float32) *ground {
 
 	// OpenGL shape
 
-	ground.openglShape = shapes.NewSegment(x1, y1, x2, y2)
+	ground.openglShape = shapes.NewSegment(world.segmentProgramShader, x1, y1, x2, y2)
 	ground.openglShape.Color(color.White)
 
 	return ground

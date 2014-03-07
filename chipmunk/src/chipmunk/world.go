@@ -7,6 +7,8 @@ import (
 	"github.com/lucasb-eyer/go-colorful"
 	"github.com/remogatto/mandala"
 	"github.com/remogatto/mathgl"
+	"github.com/remogatto/shaders"
+	"github.com/remogatto/shapes"
 	"github.com/vova616/chipmunk"
 	"github.com/vova616/chipmunk/vect"
 )
@@ -35,6 +37,8 @@ type world struct {
 	ground                        *ground
 	explosionPlayer, impactPlayer *mandala.AudioPlayer
 	explosionBuffer, impactBuffer []byte
+	boxProgramShader              shaders.Program
+	segmentProgramShader          shaders.Program
 }
 
 func newWorld(width, height int) *world {
@@ -80,6 +84,11 @@ func newWorld(width, height int) *world {
 	}
 	world.impactBuffer = response.Buffer
 
+	// Compile the shaders
+
+	world.boxProgramShader = shaders.NewProgram(shapes.DefaultBoxFS, shapes.DefaultBoxVS)
+	world.segmentProgramShader = shaders.NewProgram(shapes.DefaultSegmentFS, shapes.DefaultSegmentVS)
+
 	return world
 }
 
@@ -117,7 +126,7 @@ func (w *world) createFromString(s []string) {
 	for y, line := range s {
 		for x, b := range line {
 			if b == '+' {
-				box := newBox(boxW, boxH)
+				box := newBox(w, boxW, boxH)
 				pos := vect.Vect{
 					vect.Float(float32(x) * boxW),
 					vect.Float(startY - (float32(y) * boxH)),
@@ -141,7 +150,7 @@ func (w *world) addBox(box *box) *box {
 }
 
 func (w *world) dropBox(x, y float32) {
-	box := newBox(20, 20)
+	box := newBox(w, 20, 20)
 	box.physicsBody.SetMass(10)
 	box.physicsBody.AddAngularVelocity(10)
 	box.physicsBody.SetAngle(vect.Float(2 * math.Pi * chipmunk.DegreeConst * rand.Float32()))
