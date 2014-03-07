@@ -55,7 +55,7 @@ func (c callbacks) CollisionPostSolve(arbiter *chipmunk.Arbiter) {}
 
 func (c callbacks) CollisionExit(arbiter *chipmunk.Arbiter) {}
 
-func newBox(width, height float32) *box {
+func newBox(world *world, width, height float32) *box {
 	box := new(box)
 
 	// Chipmunk body
@@ -73,7 +73,7 @@ func newBox(width, height float32) *box {
 
 	// OpenGL shape
 
-	box.openglShape = shapes.NewBox(width, height)
+	box.openglShape = shapes.NewBox(world.boxProgramShader, width, height)
 
 	return box
 }

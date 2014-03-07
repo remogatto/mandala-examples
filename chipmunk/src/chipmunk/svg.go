@@ -64,7 +64,7 @@ func (w *world) createFromSvg(filename string) {
 			rY := float32(w.height) - (rect.Y+rect.Height/2)*scaleY
 			rW := rect.Width * scaleX
 			rH := rect.Height * scaleY
-			box := newBox(rW, rH)
+			box := newBox(w, rW, rH)
 			pos := vect.Vect{
 				vect.Float(rX),
 				vect.Float(rY),
@@ -87,6 +87,7 @@ func (w *world) createFromSvg(filename string) {
 	}
 	line := svg.Groups[0].Line
 	w.setGround(newGround(
+		w,
 		0,
 		float32(w.height)-float32(line.Y1*scaleY),
 		float32(w.width),
