@@ -30,8 +30,9 @@ type renderLoopControl struct {
 }
 
 type gameState struct {
-	window mandala.Window
-	world  *world
+	window      mandala.Window
+	world       *world
+	fps, frames int
 }
 
 func newGameState(window mandala.Window) *gameState {
@@ -70,6 +71,16 @@ func newRenderLoopControl() *renderLoopControl {
 	}
 }
 
+func (s *gameState) printFPS(x, y float32) {
+	text, err := s.world.font.Printf("Frames per second %d", s.fps)
+	if err != nil {
+		panic(err)
+	}
+	text.AttachToWorld(s.world)
+	text.MoveTo(x, y)
+	text.Draw()
+}
+
 func (s *gameState) draw() {
 	gl.Clear(gl.COLOR_BUFFER_BIT)
 
@@ -86,6 +97,8 @@ func (s *gameState) draw() {
 	}
 
 	s.world.ground.draw()
+
+	s.printFPS(float32(s.world.width/2), float32(s.world.height)-25)
 }
 
 // Run runs renderLoop. The loop renders a frame and swaps the buffer
@@ -107,6 +120,9 @@ func renderLoopFunc(control *renderLoopControl) loop.LoopFunc {
 		ticker := time.NewTicker(time.Duration(1e9 / int(FramesPerSecond)))
 		ticker.Stop()
 
+		fpsTicker := time.NewTicker(time.Duration(time.Second))
+		fpsTicker.Stop()
+
 		for {
 			select {
 			case init := <-control.init:
@@ -123,17 +139,24 @@ func renderLoopFunc(control *renderLoopControl) loop.LoopFunc {
 				ShowAdPopup(activity)
 
 				ticker = time.NewTicker(time.Duration(time.Second / time.Duration(FramesPerSecond)))
+				fpsTicker = time.NewTicker(time.Duration(time.Second))
 
 			case tap := <-control.tapEvent:
 				state.world.explosion(tap[0], tap[1])
 
 			// At each tick render a frame and swap buffers.
 			case <-ticker.C:
+				state.frames++
 				state.draw()
 				state.window.SwapBuffers()
 
+			case <-fpsTicker.C:
+				state.fps = state.frames
+				state.frames = 0
+
 			case event := <-control.pause:
 				ticker.Stop()
+				fpsTicker.Stop()
 				state.world.destroy()
 				event.Paused <- true
 

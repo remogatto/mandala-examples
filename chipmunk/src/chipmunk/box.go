@@ -81,13 +81,14 @@ func newBox(world *world, width, height float32) *box {
 func (box *box) draw() {
 	pos := box.physicsBody.Position()
 	rot := box.physicsBody.Angle() * chipmunk.DegreeConst
-	box.openglShape.Position(float32(pos.X), float32(pos.Y))
+	box.openglShape.MoveTo(float32(pos.X), float32(pos.Y))
 	box.openglShape.Rotate(float32(rot))
 	box.openglShape.Draw()
 }
 
 func (box *box) inViewport() bool {
 	pos := box.physicsBody.Position()
-	width, _ := box.openglShape.GetSize()
+	r := box.openglShape.Bounds()
+	width := float32(r.Dx())
 	return (float32(pos.X) > -width) && (float32(pos.X) < (width + float32(box.world.width)))
 }

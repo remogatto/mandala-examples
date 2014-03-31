@@ -81,7 +81,7 @@ func (w *world) createFromSvg(filename string) {
 				box.physicsBody.SetAngle(90 / chipmunk.DegreeConst)
 			}
 
-			box.openglShape.Color(colorful.HappyColor())
+			box.openglShape.SetColor(colorful.HappyColor())
 			w.addBox(box)
 		}
 	}

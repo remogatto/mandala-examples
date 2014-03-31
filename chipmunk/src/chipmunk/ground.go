@@ -35,7 +35,7 @@ func newGround(world *world, x1, y1, x2, y2 float32) *ground {
 	// OpenGL shape
 
 	ground.openglShape = shapes.NewSegment(world.segmentProgramShader, x1, y1, x2, y2)
-	ground.openglShape.Color(color.White)
+	ground.openglShape.SetColor(color.White)
 
 	return ground
 }

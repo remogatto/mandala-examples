@@ -1,12 +1,16 @@
 package main
 
 import (
+	"bytes"
+	"image"
 	"math"
 	"math/rand"
 
 	"github.com/lucasb-eyer/go-colorful"
+	"github.com/remogatto/gltext"
 	"github.com/remogatto/mandala"
 	"github.com/remogatto/mathgl"
+	gl "github.com/remogatto/opengles2"
 	"github.com/remogatto/shaders"
 	"github.com/remogatto/shapes"
 	"github.com/vova616/chipmunk"
@@ -28,6 +32,19 @@ var (
 	}
 )
 
+type texture struct {
+	bounds image.Rectangle
+	id     uint32
+}
+
+func (t *texture) Bounds() image.Rectangle {
+	return t.bounds
+}
+
+func (t *texture) Id() uint32 {
+	return t.id
+}
+
 type world struct {
 	width, height                 int
 	projMatrix                    mathgl.Mat4f
@@ -39,6 +56,7 @@ type world struct {
 	explosionBuffer, impactBuffer []byte
 	boxProgramShader              shaders.Program
 	segmentProgramShader          shaders.Program
+	font                          *gltext.Font
 }
 
 func newWorld(width, height int) *world {
@@ -89,6 +107,21 @@ func newWorld(width, height int) *world {
 	world.boxProgramShader = shaders.NewProgram(shapes.DefaultBoxFS, shapes.DefaultBoxVS)
 	world.segmentProgramShader = shaders.NewProgram(shapes.DefaultSegmentFS, shapes.DefaultSegmentVS)
 
+	// Load the font
+	responseCh = make(chan mandala.LoadResourceResponse)
+	mandala.ReadResource("raw/freesans.ttf", responseCh)
+	response = <-responseCh
+	fontBuffer := response.Buffer
+	err = response.Error
+	if err != nil {
+		panic(err)
+	}
+
+	world.font, err = gltext.LoadTruetype(bytes.NewBuffer(fontBuffer), world, 12, 32, 127, gltext.LeftToRight)
+	if err != nil {
+		panic(err)
+	}
+
 	return world
 }
 
@@ -98,6 +131,18 @@ func (w *world) Projection() mathgl.Mat4f {
 
 func (w *world) View() mathgl.Mat4f {
 	return w.viewMatrix
+}
+
+func (w *world) UploadRGBAImage(img *image.RGBA) gltext.Texture {
+	t := new(texture)
+	ib := img.Bounds()
+	t.bounds = ib
+	gl.GenTextures(1, &t.id)
+	gl.BindTexture(gl.TEXTURE_2D, t.id)
+	gl.TexParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR)
+	gl.TexParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR)
+	gl.TexImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.Sizei(ib.Dx()), gl.Sizei(ib.Dy()), 0, gl.RGBA, gl.UNSIGNED_BYTE, gl.Void(&img.Pix[0]))
+	return t
 }
 
 func (w *world) createFromString(s []string) {
@@ -133,7 +178,7 @@ func (w *world) createFromString(s []string) {
 				}
 				box.physicsBody.SetPosition(pos)
 				box.physicsBody.SetAngle(0)
-				box.openglShape.Color(colorful.HappyColor())
+				box.openglShape.SetColor(colorful.HappyColor())
 				w.addBox(box)
 			}
 		}
