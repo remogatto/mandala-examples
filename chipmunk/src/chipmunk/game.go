@@ -6,9 +6,9 @@ import (
 	"time"
 	"unsafe"
 
-	"git.tideland.biz/goas/loop"
 	"github.com/remogatto/mandala"
 	gl "github.com/remogatto/opengles2"
+	"github.com/tideland/goas/v2/loop"
 	"github.com/vova616/chipmunk/vect"
 )
 

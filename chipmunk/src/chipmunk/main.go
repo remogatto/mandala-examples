@@ -10,9 +10,9 @@ import (
 	"strconv"
 	"strings"
 
-	"git.tideland.biz/goas/loop"
 	glfw "github.com/go-gl/glfw3"
 	"github.com/remogatto/mandala"
+	"github.com/tideland/goas/v2/loop"
 )
 
 func main() {

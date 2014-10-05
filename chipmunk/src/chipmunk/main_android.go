@@ -4,9 +4,10 @@ package main
 
 import (
 	"fmt"
-	"git.tideland.biz/goas/loop"
-	"github.com/remogatto/mandala"
 	"runtime"
+
+	"github.com/remogatto/mandala"
+	"github.com/tideland/goas/v2/loop"
 )
 
 func main() {
