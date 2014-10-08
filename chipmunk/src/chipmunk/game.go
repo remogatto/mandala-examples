@@ -78,7 +78,7 @@ func renderLoopFunc(control *renderLoopControl) loop.LoopFunc {
 				fpsTicker = time.NewTicker(time.Duration(time.Second))
 
 			case tap := <-control.tapEvent:
-				state.World.Explosion(tap[0], tap[1])
+				state.World.Remove(tap[0], tap[1])
 
 			// At each tick render a frame and swap buffers.
 			case <-ticker.C:

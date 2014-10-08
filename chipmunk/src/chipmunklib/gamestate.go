@@ -31,8 +31,8 @@ func NewGameState(window mandala.Window) *GameState {
 	// Uncomment the following lines to generate the world
 	// starting from a string (defined in world.go)
 
-	// s.world.createFromString(pyramid)
-	// s.world.setGround(newGround(0, float32(10), float32(w), float32(10)))
+	// s.World.CreateFromString(pyramid)
+	// s.World.setGround(newGround(s.World, 0, float32(10), float32(w), float32(10)))
 
 	s.World.CreateFromSvg("raw/world.svg")
 

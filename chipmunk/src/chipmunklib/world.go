@@ -145,7 +145,7 @@ func (w *World) UploadRGBAImage(img *image.RGBA) gltext.Texture {
 	return t
 }
 
-func (w *World) createFromString(s []string) {
+func (w *World) CreateFromString(s []string) {
 	// Number of boxes of both axes
 	nY := len(s)
 	nX := len(s[0])
@@ -203,6 +203,7 @@ func (w *World) dropBox(x, y float32) {
 	w.addBox(box)
 }
 
+// Explosion produce an explosion at the given coordinates.
 func (w *World) Explosion(x, y float32) {
 	w.explosionPlayer.Play(w.explosionBuffer, nil)
 	y = float32(w.height) - y
@@ -216,6 +217,23 @@ func (w *World) Explosion(x, y float32) {
 		force.Mult(vect.Float(1 / force.Length() * 1e5))
 		box.physicsBody.SetForce(float32(force.X), float32(force.Y))
 	}
+}
+
+// Remove removes the box at the given coordinates.
+func (w *World) Remove(x, y float32) int {
+	y = float32(w.height) - y
+	for id, box := range w.boxes {
+		cx, cy := box.openglShape.Center()
+		distance := vect.Sub(
+			vect.Vect{vect.Float(cx), vect.Float(cy)},
+			vect.Vect{vect.Float(x), vect.Float(y)},
+		)
+		if distance.LengthSqr() < vect.Float(BoxSize) {
+			w.removeBox(box, id)
+			return id
+		}
+	}
+	return -1
 }
 
 func (w *World) removeBox(box *Box, index int) {
