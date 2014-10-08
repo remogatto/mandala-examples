@@ -1,4 +1,4 @@
-package main
+package chipmunklib
 
 import (
 	"encoding/xml"
@@ -38,7 +38,7 @@ type svgFile struct {
 	Groups  []svgGroup `xml:"g"`
 }
 
-func (w *world) createFromSvg(filename string) {
+func (w *World) CreateFromSvg(filename string) {
 	var svg svgFile
 
 	responseCh := make(chan mandala.LoadResourceResponse)

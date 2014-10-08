@@ -13,7 +13,6 @@ import (
 	"time"
 
 	"github.com/remogatto/mandala"
-	"github.com/remogatto/mathgl"
 	gl "github.com/remogatto/opengles2"
 	"github.com/remogatto/prettytest"
 	"github.com/remogatto/shaders"
@@ -27,12 +26,6 @@ const (
 
 	expectedImgPath = "drawable"
 )
-
-type world struct {
-	width, height int
-	projMatrix    mathgl.Mat4f
-	viewMatrix    mathgl.Mat4f
-}
 
 type TestSuite struct {
 	prettytest.Suite
@@ -199,43 +192,6 @@ func (t *TestSuite) BeforeAll() {
 		)
 	}
 
-}
-
-func newWorld(width, height int) *world {
-	return &world{
-		width:      width,
-		height:     height,
-		projMatrix: mathgl.Ortho2D(0, float32(width), -float32(height/2), float32(height/2)),
-		viewMatrix: mathgl.Ident4f(),
-	}
-}
-
-func (w *world) Projection() mathgl.Mat4f {
-	return w.projMatrix
-}
-
-func (w *world) View() mathgl.Mat4f {
-	return w.viewMatrix
-}
-
-func (w *world) addImageAsTexture(filename string) uint32 {
-	var texBuffer uint32
-	texImg, err := loadImageResource(filename)
-	if err != nil {
-		panic(err)
-	}
-	b := texImg.Bounds()
-	rgbaImage := image.NewRGBA(image.Rect(0, 0, b.Dx(), b.Dy()))
-	draw.Draw(rgbaImage, rgbaImage.Bounds(), texImg, b.Min, draw.Src)
-
-	width, height := gl.Sizei(b.Dx()), gl.Sizei(b.Dy())
-	gl.GenTextures(1, &texBuffer)
-	gl.BindTexture(gl.TEXTURE_2D, texBuffer)
-	gl.TexParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST)
-	gl.TexParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST)
-	gl.TexImage2D(gl.TEXTURE_2D, 0, gl.RGBA, width, height, 0, gl.RGBA, gl.UNSIGNED_BYTE, gl.Void(&rgbaImage.Pix[0]))
-
-	return texBuffer
 }
 
 // loadImageResource loads an image with the given filename from the

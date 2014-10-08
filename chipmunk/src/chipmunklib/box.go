@@ -1,4 +1,4 @@
-package main
+package chipmunklib
 
 import (
 	"github.com/remogatto/mandala"
@@ -22,7 +22,7 @@ type impactUserData struct {
 	impactBuffer []byte
 }
 
-type box struct {
+type Box struct {
 	// Chipumunk stuff
 	physicsBody  *chipmunk.Body
 	physicsShape *chipmunk.Shape
@@ -30,7 +30,7 @@ type box struct {
 	// OpenGL stuff
 	openglShape *shapes.Box
 
-	world *world
+	world *World
 }
 
 func (c callbacks) CollisionEnter(arbiter *chipmunk.Arbiter) bool {
@@ -55,8 +55,8 @@ func (c callbacks) CollisionPostSolve(arbiter *chipmunk.Arbiter) {}
 
 func (c callbacks) CollisionExit(arbiter *chipmunk.Arbiter) {}
 
-func newBox(world *world, width, height float32) *box {
-	box := new(box)
+func newBox(world *World, width, height float32) *Box {
+	box := new(Box)
 
 	// Chipmunk body
 
@@ -78,7 +78,7 @@ func newBox(world *world, width, height float32) *box {
 	return box
 }
 
-func (box *box) draw() {
+func (box *Box) draw() {
 	pos := box.physicsBody.Position()
 	rot := box.physicsBody.Angle() * chipmunk.DegreeConst
 	box.openglShape.MoveTo(float32(pos.X), float32(pos.Y))
@@ -86,7 +86,7 @@ func (box *box) draw() {
 	box.openglShape.Draw()
 }
 
-func (box *box) inViewport() bool {
+func (box *Box) inViewport() bool {
 	pos := box.physicsBody.Position()
 	r := box.openglShape.Bounds()
 	width := float32(r.Dx())

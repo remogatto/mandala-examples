@@ -1,15 +1,14 @@
 package main
 
 import (
-	"math/rand"
 	"runtime"
 	"time"
 	"unsafe"
 
 	"github.com/remogatto/mandala"
+	lib "github.com/remogatto/mandala-examples/chipmunk/src/chipmunklib"
 	gl "github.com/remogatto/opengles2"
 	"github.com/tideland/goas/v2/loop"
-	"github.com/vova616/chipmunk/vect"
 )
 
 const (
@@ -29,42 +28,6 @@ type renderLoopControl struct {
 	tapEvent chan [2]float32
 }
 
-type gameState struct {
-	window      mandala.Window
-	world       *world
-	fps, frames int
-}
-
-func newGameState(window mandala.Window) *gameState {
-	s := new(gameState)
-	s.window = window
-
-	s.window.MakeContextCurrent()
-
-	w, h := window.GetSize()
-
-	s.world = newWorld(w, h)
-
-	// Create the building reading it from a string
-	rand.Seed(int64(time.Now().Nanosecond()))
-
-	// Uncomment the following lines to generate the world
-	// starting from a string (defined in world.go)
-
-	// s.world.createFromString(pyramid)
-	// s.world.setGround(newGround(0, float32(10), float32(w), float32(10)))
-
-	s.world.createFromSvg("raw/world.svg")
-
-	gl.Enable(gl.BLEND)
-	gl.BlendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA)
-
-	gl.ClearColor(0.0, 0.0, 0.0, 1.0)
-	gl.Clear(gl.COLOR_BUFFER_BIT)
-
-	return s
-}
-
 func newRenderLoopControl() *renderLoopControl {
 	return &renderLoopControl{
 		make(chan mandala.PauseEvent),
@@ -74,42 +37,12 @@ func newRenderLoopControl() *renderLoopControl {
 	}
 }
 
-func (s *gameState) printFPS(x, y float32) {
-	text, err := s.world.font.Printf("Frames per second %d", s.fps)
-	if err != nil {
-		panic(err)
-	}
-	text.AttachToWorld(s.world)
-	text.MoveTo(x, y)
-	text.Draw()
-}
-
-func (s *gameState) draw() {
-	gl.Clear(gl.COLOR_BUFFER_BIT)
-
-	s.world.space.Step(vect.Float(1 / float32(FramesPerSecond)))
-
-	for i := 0; i < len(s.world.boxes); i++ {
-		box := s.world.boxes[i]
-		if box.inViewport() {
-			box.draw()
-		} else {
-			s.world.removeBox(box, i)
-			i--
-		}
-	}
-
-	s.world.ground.draw()
-
-	s.printFPS(float32(s.world.width/2), float32(s.world.height)-25)
-}
-
 // Run runs renderLoop. The loop renders a frame and swaps the buffer
 // at each tick received.
 func renderLoopFunc(control *renderLoopControl) loop.LoopFunc {
 	return func(loop loop.Loop) error {
 
-		var state *gameState
+		var state *lib.GameState
 
 		// Lock/unlock the loop to the current OS thread. This is
 		// necessary because OpenGL functions should be called from
@@ -134,7 +67,7 @@ func renderLoopFunc(control *renderLoopControl) loop.LoopFunc {
 
 				ticker.Stop()
 
-				state = newGameState(window)
+				state = lib.NewGameState(window)
 
 				width, height := window.GetSize()
 				gl.Viewport(0, 0, gl.Sizei(width), gl.Sizei(height))
@@ -145,22 +78,22 @@ func renderLoopFunc(control *renderLoopControl) loop.LoopFunc {
 				fpsTicker = time.NewTicker(time.Duration(time.Second))
 
 			case tap := <-control.tapEvent:
-				state.world.explosion(tap[0], tap[1])
+				state.World.Explosion(tap[0], tap[1])
 
 			// At each tick render a frame and swap buffers.
 			case <-ticker.C:
-				state.frames++
-				state.draw()
-				state.window.SwapBuffers()
+				state.Frames++
+				state.Draw()
+				state.SwapBuffers()
 
 			case <-fpsTicker.C:
-				state.fps = state.frames
-				state.frames = 0
+				state.Fps = state.Frames
+				state.Frames = 0
 
 			case event := <-control.pause:
 				ticker.Stop()
 				fpsTicker.Stop()
-				state.world.destroy()
+				state.World.Destroy()
 				event.Paused <- true
 
 			case <-control.resume:

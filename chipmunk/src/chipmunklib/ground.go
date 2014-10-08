@@ -1,4 +1,4 @@
-package main
+package chipmunklib
 
 import (
 	"image/color"
@@ -12,14 +12,14 @@ const (
 	GroundRadius = 1.0
 )
 
-type ground struct {
+type Ground struct {
 	physicsShape *chipmunk.Shape
 	physicsBody  *chipmunk.Body
 	openglShape  *shapes.Segment
 }
 
-func newGround(world *world, x1, y1, x2, y2 float32) *ground {
-	ground := new(ground)
+func newGround(world *World, x1, y1, x2, y2 float32) *Ground {
+	ground := new(Ground)
 
 	// Chipmunk body
 
@@ -40,6 +40,6 @@ func newGround(world *world, x1, y1, x2, y2 float32) *ground {
 	return ground
 }
 
-func (ground *ground) draw() {
+func (ground *Ground) draw() {
 	ground.openglShape.Draw()
 }

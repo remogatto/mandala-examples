@@ -1,4 +1,4 @@
-package main
+package chipmunklib
 
 import (
 	"bytes"
@@ -45,13 +45,13 @@ func (t *texture) Id() uint32 {
 	return t.id
 }
 
-type world struct {
+type World struct {
 	width, height                 int
 	projMatrix                    mathgl.Mat4f
 	viewMatrix                    mathgl.Mat4f
 	space                         *chipmunk.Space
-	boxes                         []*box
-	ground                        *ground
+	boxes                         []*Box
+	ground                        *Ground
 	explosionPlayer, impactPlayer *mandala.AudioPlayer
 	explosionBuffer, impactBuffer []byte
 	boxProgramShader              shaders.Program
@@ -59,8 +59,8 @@ type world struct {
 	font                          *gltext.Font
 }
 
-func newWorld(width, height int) *world {
-	world := &world{
+func NewWorld(width, height int) *World {
+	world := &World{
 		width:      width,
 		height:     height,
 		projMatrix: mathgl.Ortho2D(0, float32(width), 0, float32(height)),
@@ -125,15 +125,15 @@ func newWorld(width, height int) *world {
 	return world
 }
 
-func (w *world) Projection() mathgl.Mat4f {
+func (w *World) Projection() mathgl.Mat4f {
 	return w.projMatrix
 }
 
-func (w *world) View() mathgl.Mat4f {
+func (w *World) View() mathgl.Mat4f {
 	return w.viewMatrix
 }
 
-func (w *world) UploadRGBAImage(img *image.RGBA) gltext.Texture {
+func (w *World) UploadRGBAImage(img *image.RGBA) gltext.Texture {
 	t := new(texture)
 	ib := img.Bounds()
 	t.bounds = ib
@@ -145,7 +145,7 @@ func (w *world) UploadRGBAImage(img *image.RGBA) gltext.Texture {
 	return t
 }
 
-func (w *world) createFromString(s []string) {
+func (w *World) createFromString(s []string) {
 	// Number of boxes of both axes
 	nY := len(s)
 	nX := len(s[0])
@@ -185,7 +185,7 @@ func (w *world) createFromString(s []string) {
 	}
 }
 
-func (w *world) addBox(box *box) *box {
+func (w *World) addBox(box *Box) *Box {
 	box.world = w
 	w.space.AddBody(box.physicsBody)
 	box.openglShape.AttachToWorld(w)
@@ -194,7 +194,7 @@ func (w *world) addBox(box *box) *box {
 	return box
 }
 
-func (w *world) dropBox(x, y float32) {
+func (w *World) dropBox(x, y float32) {
 	box := newBox(w, 20, 20)
 	box.physicsBody.SetMass(10)
 	box.physicsBody.AddAngularVelocity(10)
@@ -203,7 +203,7 @@ func (w *world) dropBox(x, y float32) {
 	w.addBox(box)
 }
 
-func (w *world) explosion(x, y float32) {
+func (w *World) Explosion(x, y float32) {
 	w.explosionPlayer.Play(w.explosionBuffer, nil)
 	y = float32(w.height) - y
 	for _, box := range w.boxes {
@@ -218,20 +218,20 @@ func (w *world) explosion(x, y float32) {
 	}
 }
 
-func (w *world) removeBox(box *box, index int) {
+func (w *World) removeBox(box *Box, index int) {
 	box.physicsBody.UserData = nil
 	w.space.RemoveBody(box.physicsBody)
 	w.boxes = append(w.boxes[:index], w.boxes[index+1:]...)
 }
 
-func (w *world) setGround(ground *ground) *ground {
+func (w *World) setGround(ground *Ground) *Ground {
 	w.space.AddBody(ground.physicsBody)
 	ground.openglShape.AttachToWorld(w)
 	w.ground = ground
 	return ground
 }
 
-func (w *world) destroy() {
+func (w *World) Destroy() {
 	w.impactPlayer.Destroy()
 	w.explosionPlayer.Destroy()
 	for i := 0; i < len(w.boxes); i++ {
